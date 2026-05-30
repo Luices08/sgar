@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> — SGAR</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f8f8f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #1a1a2e;
+    }
+    .error-card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 48px;
+      max-width: 480px;
+      text-align: center;
+    }
+    .error-code {
+      font-size: 72px;
+      font-weight: 700;
+      color: #e5e5e5;
+      line-height: 1;
+    }
+    h1 { font-size: 20px; margin: 16px 0 8px; }
+    p  { color: #666; font-size: 14px; line-height: 1.6; }
+    a  {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 10px 24px;
+      background: var(--color-acento, #1a1a2e);
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-card">
+    <div class="error-code"><%= status %></div>
+    <h1><%= title %></h1>
+    <p><%= message %></p>
+    <a href="/">← Volver al inicio</a>
+  </div>
+</body>
+</html>

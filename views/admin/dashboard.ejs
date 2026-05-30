@@ -1,0 +1,107 @@
+<%- include('partials/head') %>
+</head>
+<body class="admin-layout">
+
+<%- include('partials/nav') %>
+
+<main class="main-content">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title" id="page-title">Cargando...</h1>
+      <p class="page-subtitle" id="page-subtitle"></p>
+    </div>
+    <button class="btn-primary" id="btn-nuevo" style="display:none">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span id="btn-nuevo-label">Nuevo</span>
+    </button>
+  </header>
+
+  <!-- AdminControl: lista de tenants -->
+  <div id="view-admincontrol" style="display:none">
+    <div id="tenants-grid" class="cards-grid"></div>
+  </div>
+
+  <!-- AdminConjunto: bitácora del día -->
+  <div id="view-adminconjunto" style="display:none">
+    <div class="dashboard-top-strip" id="top-strip">
+      <div class="strip-stat">
+        <span class="strip-number" id="stat-hora">—</span>
+        <span class="strip-label">Ingresos última hora</span>
+      </div>
+      <div class="strip-stat">
+        <span class="strip-number" id="stat-celadores">—</span>
+        <span class="strip-label">Celadores activos</span>
+      </div>
+      <div class="strip-stat">
+        <span class="strip-number" id="stat-hoy">—</span>
+        <span class="strip-label">Total hoy</span>
+      </div>
+    </div>
+
+    <div class="timeline-header">
+      <h2 class="section-title">Bitácora del día</h2>
+      <span id="timeline-date" class="timeline-date"></span>
+    </div>
+    <div id="timeline-list" class="timeline-list">
+      <div class="empty-state">Cargando registros…</div>
+    </div>
+  </div>
+</main>
+
+<!-- DRAWER: formulario de nuevo tenant -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer-tenant">
+  <div class="drawer-header">
+    <h2 class="drawer-title" id="drawer-title">Nuevo Conjunto</h2>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body">
+    <form id="form-tenant" enctype="multipart/form-data">
+      <input type="hidden" id="tenant-edit-id">
+      <div class="form-field">
+        <label>ID del conjunto *</label>
+        <input type="text" id="f-tenant-id" placeholder="c_lospinos_001" pattern="[a-z0-9_]+" required>
+        <small>Solo letras minúsculas, números y guiones bajos</small>
+      </div>
+      <div class="form-field">
+        <label>Nombre del conjunto *</label>
+        <input type="text" id="f-nombre" placeholder="Conjunto Residencial Los Pinos" required>
+      </div>
+      <div class="form-field">
+        <label>Descripción</label>
+        <textarea id="f-descripcion" rows="3" placeholder="Descripción breve…"></textarea>
+      </div>
+      <div class="form-field">
+        <label>Color de acento</label>
+        <div class="color-row">
+          <input type="color" id="f-color" value="#2d6a4f">
+          <input type="text" id="f-color-text" value="#2d6a4f" placeholder="#2d6a4f" maxlength="7">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Imagen del conjunto</label>
+        <input type="file" id="f-imagen" accept="image/*">
+      </div>
+      <div class="form-divider">Administrador del conjunto</div>
+      <div class="form-field">
+        <label>Email del admin *</label>
+        <input type="email" id="f-admin-email" placeholder="admin@conjunto.com">
+      </div>
+      <div class="form-field">
+        <label>Nombre del admin</label>
+        <input type="text" id="f-admin-nombre" placeholder="Nombre completo">
+      </div>
+      <div class="form-field">
+        <label>Contraseña inicial</label>
+        <input type="text" id="f-admin-pwd" placeholder="123456 (por defecto)">
+      </div>
+      <div id="form-error" class="form-error" style="display:none"></div>
+      <button type="submit" class="btn-primary btn-block">Guardar conjunto</button>
+    </form>
+  </div>
+</aside>
+
+<script src="/static/admin/js/admin-common.js"></script>
+<script src="/static/admin/js/dashboard.js"></script>
+</body>
+</html>

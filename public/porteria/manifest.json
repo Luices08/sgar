@@ -1,0 +1,24 @@
+{
+  "name": "SGAR Portería",
+  "short_name": "Portería",
+  "description": "Sistema de Gestión de Acceso Residencial — Panel del Celador",
+  "start_url": "/porteria",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#1a1a2e",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/static/porteria/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/porteria/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

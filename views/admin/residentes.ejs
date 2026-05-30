@@ -1,0 +1,83 @@
+<%- include('partials/head') %>
+</head>
+<body class="admin-layout">
+<%- include('partials/nav') %>
+<main class="main-content">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Residentes</h1>
+      <p class="page-subtitle" id="sub-count">Cargando…</p>
+    </div>
+    <div class="header-actions">
+      <input type="search" id="search-input" class="search-input" placeholder="Buscar nombre, cédula, apto…">
+      <button class="btn-primary" id="btn-nuevo">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo residente
+      </button>
+    </div>
+  </header>
+
+  <div class="table-wrapper">
+    <table class="data-table" id="residents-table">
+      <thead>
+        <tr>
+          <th>Nombre</th><th>Apartamento</th><th>Cédula</th>
+          <th>Email</th><th>Teléfono</th><th>Estado</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="residents-tbody">
+        <tr><td colspan="7" class="table-loading">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</main>
+
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer-resident">
+  <div class="drawer-header">
+    <h2 class="drawer-title" id="drawer-title">Nuevo Residente</h2>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body">
+    <form id="form-resident" enctype="multipart/form-data">
+      <input type="hidden" id="r-edit-id">
+      <div class="form-field">
+        <label>Nombre completo *</label>
+        <input type="text" id="r-nombre" required>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Apartamento *</label>
+          <input type="text" id="r-apartamento" placeholder="101" required>
+        </div>
+        <div class="form-field">
+          <label>Cédula</label>
+          <input type="text" id="r-cedula" placeholder="1234567890">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Email</label>
+        <input type="email" id="r-email" placeholder="residente@ejemplo.com">
+      </div>
+      <div class="form-field">
+        <label>Teléfono</label>
+        <input type="text" id="r-telefono" placeholder="3001234567">
+      </div>
+      <div class="form-field">
+        <label>Foto</label>
+        <input type="file" id="r-foto" accept="image/*">
+      </div>
+      <div id="r-form-error" class="form-error" style="display:none"></div>
+      <button type="submit" class="btn-primary btn-block">Guardar</button>
+      <button type="button" class="btn-secondary btn-block" id="btn-create-account" style="display:none">
+        Crear cuenta de acceso
+      </button>
+    </form>
+  </div>
+</aside>
+
+<script src="/static/admin/js/admin-common.js"></script>
+<script src="/static/admin/js/residentes.js"></script>
+</body>
+</html>

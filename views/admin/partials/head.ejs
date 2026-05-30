@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> — SGAR</title>
+  <link rel="stylesheet" href="/static/admin/css/admin.css">
+  <style>
+    :root {
+      --acento: <%= (typeof tenantConfig !== 'undefined' && tenantConfig && tenantConfig.colorAcento) ? tenantConfig.colorAcento : (process.env.DEFAULT_ACCENT_COLOR || '#1a1a2e') %>;
+    }
+  </style>

@@ -1,0 +1,73 @@
+<%- include('partials/head') %>
+</head>
+<body class="admin-layout">
+<%- include('partials/nav') %>
+<main class="main-content">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Usuarios del sistema</h1>
+      <p class="page-subtitle" id="sub-count">Cargando…</p>
+    </div>
+    <button class="btn-primary" id="btn-nuevo">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo usuario
+    </button>
+  </header>
+
+  <div class="filter-bar">
+    <select id="filter-rol" class="select-input">
+      <option value="">Todos los roles</option>
+      <option value="adminControl">AdminControl</option>
+      <option value="adminConjunto">AdminConjunto</option>
+      <option value="celador">Celador</option>
+      <option value="residente">Residente</option>
+    </select>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Conjunto</th><th>Estado</th><th>Acciones</th></tr>
+      </thead>
+      <tbody id="users-tbody">
+        <tr><td colspan="6" class="table-loading">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</main>
+
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer-user">
+  <div class="drawer-header">
+    <h2 class="drawer-title" id="drawer-title">Nuevo Usuario</h2>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body">
+    <form id="form-user">
+      <div class="form-field"><label>Nombre *</label><input type="text" id="u-nombre" required></div>
+      <div class="form-field"><label>Email *</label><input type="email" id="u-email" required></div>
+      <div class="form-field"><label>Contraseña *</label><input type="password" id="u-pwd" required></div>
+      <div class="form-field">
+        <label>Rol *</label>
+        <select id="u-rol" required>
+          <option value="">Seleccionar rol…</option>
+          <option value="adminControl">AdminControl</option>
+          <option value="adminConjunto">AdminConjunto</option>
+          <option value="celador">Celador</option>
+        </select>
+      </div>
+      <div class="form-field" id="field-tenant">
+        <label>Conjunto</label>
+        <select id="u-tenant"><option value="">Sin conjunto</option></select>
+      </div>
+      <div id="u-form-error" class="form-error" style="display:none"></div>
+      <button type="submit" class="btn-primary btn-block">Guardar</button>
+    </form>
+  </div>
+</aside>
+
+<script src="/static/admin/js/admin-common.js"></script>
+<script src="/static/admin/js/usuarios.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<%- include('partials/head') %>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="admin-layout">
+<%- include('partials/nav') %>
+<main class="main-content">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Analíticas</h1>
+      <p class="page-subtitle" id="analytics-subtitle">Cargando datos…</p>
+    </div>
+  </header>
+
+  <!-- AdminControl: gráficas globales -->
+  <div id="view-admincontrol" style="display:none">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3 class="chart-title">Ingresos por conjunto — últimos 7 días</h3>
+        <canvas id="chart-ingresos-conjuntos" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3 class="chart-title">Residentes registrados por conjunto</h3>
+        <canvas id="chart-residentes-conjuntos" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- AdminConjunto / Celador: gráficas del conjunto -->
+  <div id="view-conjunto" style="display:none">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3 class="chart-title">Ingresos por tipo de visitante — hoy</h3>
+        <canvas id="chart-tipo" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3 class="chart-title">Picos de ingreso por franja horaria — hoy</h3>
+        <canvas id="chart-franjas" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/static/admin/js/admin-common.js"></script>
+<script src="/static/admin/js/analiticas.js"></script>
+</body>
+</html>

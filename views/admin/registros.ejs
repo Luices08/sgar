@@ -1,0 +1,52 @@
+<%- include('partials/head') %>
+</head>
+<body class="admin-layout">
+<%- include('partials/nav') %>
+<main class="main-content">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Registros de acceso</h1>
+      <p class="page-subtitle" id="sub-count">Cargando…</p>
+    </div>
+    <div class="header-actions">
+      <input type="date" id="filter-date" class="date-input">
+      <select id="filter-tipo" class="select-input">
+        <option value="">Todos los tipos</option>
+        <option value="visita">Visitas</option>
+        <option value="domicilio">Domicilios</option>
+        <option value="vehiculo">Vehículos</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="table-wrapper">
+    <table class="data-table" id="visits-table">
+      <thead>
+        <tr>
+          <th>Hora</th><th>Tipo</th><th>Nombre / Empresa</th>
+          <th>Apartamento</th><th>Celador</th><th>Método</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="visits-tbody">
+        <tr><td colspan="7" class="table-loading">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</main>
+
+<!-- Drawer detalle / edición -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer-visit">
+  <div class="drawer-header">
+    <h2 class="drawer-title">Detalle del registro</h2>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body" id="visit-detail-body">
+  </div>
+</aside>
+
+<script src="/static/admin/js/admin-common.js"></script>
+<script src="/static/admin/js/registros.js"></script>
+</body>
+</html>
