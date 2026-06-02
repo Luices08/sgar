@@ -40,7 +40,7 @@
     <button class="drawer-close" id="drawer-close">✕</button>
   </div>
   <div class="drawer-body">
-    <form id="form-resident" enctype="multipart/form-data">
+    <form id="form-resident">
       <input type="hidden" id="r-edit-id">
       <div class="form-field">
         <label>Nombre completo *</label>
@@ -65,8 +65,23 @@
         <input type="text" id="r-telefono" placeholder="3001234567">
       </div>
       <div class="form-field">
-        <label>Foto</label>
-        <input type="file" id="r-foto" accept="image/*">
+        <label>Reconocimiento facial *</label>
+        <div class="camera-capture" id="resident-camera">
+          <video id="r-camera-video" class="camera-video" autoplay playsinline muted></video>
+          <canvas id="r-camera-canvas" class="camera-canvas"></canvas>
+          <div id="r-camera-preview" class="camera-preview">
+            <span>Sin captura facial</span>
+          </div>
+          <div class="camera-actions">
+            <button type="button" class="btn-secondary btn-sm" id="btn-camera-start">Prender cámara</button>
+            <button type="button" class="btn-secondary btn-sm" id="btn-camera-capture" disabled>Capturar rostro</button>
+            <button type="button" class="btn-secondary btn-sm" id="btn-camera-retake" style="display:none">Tomar otra</button>
+          </div>
+          <small>
+            Se extraen los <strong>facial landmarks</strong> (128 puntos) directamente desde la cámara.
+            No se guarda ninguna foto. Requiere buena iluminación y el rostro centrado.
+          </small>
+        </div>
       </div>
       <div id="r-form-error" class="form-error" style="display:none"></div>
       <button type="submit" class="btn-primary btn-block">Guardar</button>
@@ -76,6 +91,9 @@
     </form>
   </div>
 </aside>
+
+<%# face-api.js — librería de reconocimiento facial en el navegador %>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
 <script src="/static/admin/js/admin-common.js"></script>
 <script src="/static/admin/js/residentes.js"></script>

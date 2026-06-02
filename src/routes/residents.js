@@ -12,6 +12,7 @@ router.post('/',             auth, authorize.adminAndConjunto, tf, upload.single
 router.put('/:id',           auth, authorize.adminAndConjunto, tf, upload.single('foto'), c.update);
 router.patch('/:id/faceid',  auth, authorize.adminAndConjunto, tf, c.updateFaceId);
 router.post('/:id/account',  auth, authorize.adminAndConjunto, tf, c.createAccount);
+router.get('/:id/open-visit', auth, authorize.conjuntoStaff, tf, c.getOpenVisit);
 router.post('/bulk',         auth, authorize.adminAndConjunto, tf, c.bulkImport);
 
 module.exports = router;

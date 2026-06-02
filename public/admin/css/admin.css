@@ -433,6 +433,62 @@ body {
   margin-bottom: 12px;
 }
 
+.camera-capture {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  background: #fafafa;
+}
+.camera-video,
+.camera-preview {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  background: #111;
+  overflow: hidden;
+}
+.camera-video {
+  display: none;
+  object-fit: cover;
+}
+.camera-canvas { display: none; }
+.camera-preview {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background-color: #f0f0f0;
+  background-size: cover;
+  background-position: center;
+  color: var(--text-muted);
+  border: 1px dashed #cfcfcf;
+}
+.camera-preview.has-image {
+  border-style: solid;
+  color: #fff;
+}
+.camera-preview span {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(0,0,0,.58);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+.camera-preview:not(.has-image) span {
+  background: transparent;
+  color: var(--text-muted);
+}
+.camera-preview.is-enrolled span {
+  background: rgba(56,161,105,.9);
+}
+.camera-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
 .color-row { display: flex; gap: 10px; align-items: center; }
 .color-row input[type="color"] { width: 42px; height: 38px; border-radius: 5px; border: 1px solid var(--border); cursor: pointer; padding: 2px; }
 .color-row input[type="text"] { flex: 1; }

@@ -35,6 +35,7 @@ app.use('/static/admin',    express.static(path.join(__dirname, '..', 'public', 
 app.use('/static/porteria', express.static(path.join(__dirname, '..', 'public', 'porteria')));
 app.use('/static/residente',express.static(path.join(__dirname, '..', 'public', 'residente')));
 app.use('/uploads',         express.static(path.join(__dirname, '..', 'uploads')));
+app.use('/models', express.static(path.join(__dirname, '../public/models')));
 
 // ─── RUTAS ─────────────────────────────────────────────────────────────────────
 // Se registran en ZIP 2 (auth) y subsiguientes
@@ -44,8 +45,12 @@ app.use('/api/users',       require('./routes/users'));
 app.use('/api/residents',   require('./routes/residents'));
 app.use('/api/visits',      require('./routes/visits'));
 app.use('/api/vehicles',    require('./routes/vehicles'));
-app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/invitations', require('./routes/invitations'));
+app.use('/api/notifications',   require('./routes/notifications'));
+app.use('/api/invitations',     require('./routes/invitations'));
+app.use('/api/vehicle-access',  require('./routes/vehicleAccess'));  // Historial + permisos vehiculares
+app.use('/api/visitors',        require('./routes/visitors'));        // Registro manual + código
+app.use('/api/facial-access',   require('./routes/facialAccess'));    // Reconocimiento facial residentes
+app.use('/api/facial-enrollment', require('./routes/facialEnrollment')); // Enrolamiento biométrico
 
 // Rutas de vistas EJS
 app.use('/admin',     require('./routes/views/admin'));

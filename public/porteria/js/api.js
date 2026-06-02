@@ -139,5 +139,5 @@ const porteriaAPI = (() => {
     window.location.reload();
   }
 
-  return { login, registrarVisita, syncPendientes, validarInvitacion, completarInvitacion, buscarPlaca, logout, cargarDatosOffline };
+  return { login, registrarVisita, syncPendientes, validarInvitacion, completarInvitacion, buscarPlaca, logout, cargarDatosOffline, request };
 })();

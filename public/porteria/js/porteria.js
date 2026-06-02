@@ -91,6 +91,7 @@ async function initApp() {
   document.getElementById('btn-visita').addEventListener('click',   () => openFormVisita());
   document.getElementById('btn-domicilio').addEventListener('click', () => openFormDomicilio());
   document.getElementById('btn-placa').addEventListener('click',     () => openFormPlaca());
+  document.getElementById('btn-facial').addEventListener('click',    () => facialModule.openFacialScreen());
   document.getElementById('btn-ver-historial').addEventListener('click', () => navigate('historial'));
   document.getElementById('btn-back-historial').addEventListener('click', () => navigate('main'));
   document.getElementById('btn-back-analiticas').addEventListener('click', () => navigate('main'));
@@ -109,6 +110,9 @@ async function initApp() {
   await refreshRecientes();
   await updateSyncBanner();
 
+  // Inicializar módulo facial
+  facialModule.init();
+
   // Sincronizar cada 30 segundos si hay conexión
   syncInterval = setInterval(async () => {
     if (navigator.onLine) {
@@ -126,6 +130,7 @@ function navigate(screen) {
   closeMenu();
 
   if (screen === 'historial') loadHistorial();
+  if (screen === 'facial') {} // Manejado por facialModule
 }
 
 /* ─── MENÚ ───────────────────────────────────────────────────────────────────── */

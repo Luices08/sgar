@@ -5,9 +5,10 @@ const authorize = require('../middlewares/authorize');
 const tf        = require('../middlewares/tenantFilter');
 const c         = require('../controllers/vehicleController');
 
-router.get('/',        auth, authorize.conjuntoStaff,   tf, c.list);
-router.post('/',       auth, authorize.adminAndConjunto, tf, c.create);
-router.put('/:id',     auth, authorize.adminAndConjunto, tf, c.update);
-router.delete('/:id',  auth, authorize.adminAndConjunto, tf, c.remove);
+router.get('/',                        auth, authorize.conjuntoStaff,    tf, c.list);
+router.get('/residente/:residentId',   auth, authorize.conjuntoStaff,    tf, c.listByResident);
+router.post('/',                       auth, authorize.adminAndConjunto,  tf, c.create);
+router.put('/:id',                     auth, authorize.adminAndConjunto,  tf, c.update);
+router.delete('/:id',                  auth, authorize.adminAndConjunto,  tf, c.remove);
 
 module.exports = router;

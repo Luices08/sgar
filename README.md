@@ -108,6 +108,46 @@ npm start       # Producción
 
 ---
 
+## Reconocimiento Facial con Face++
+
+El módulo biométrico usa Face++ desde `src/services/faceppService.js`. El campo histórico `faceId` se conserva por compatibilidad interna, pero en esta integración representa un token biométrico de Face++ (`face_token`) cuando se usa enrolamiento por detección.
+
+
+### Variables de entorno
+
+```env
+FACEPP_API_KEY=tu_api_key
+FACEPP_API_SECRET=tu_api_secret
+FACEPP_BASE_URL=https://api-us.faceplusplus.com/facepp/v3
+FACEPP_CONFIDENCE_THRESHOLD=75
+BASE_URL=https://tu-dominio-publico.com
+```
+
+`BASE_URL` debe ser público si se enrola desde `fotoUrl`, porque Face++ necesita leer la imagen por URL.
+
+### Rutas
+
+| Método | Ruta | Uso |
+|--------|------|-----|
+| `POST` | `/api/facial-enrollment/:residentId/enrolar` | Detecta rostro en la foto del residente y guarda el token |
+| `PATCH` | `/api/facial-enrollment/:residentId/faceid` | Guarda manualmente `faceId` o `faceToken` |
+| `DELETE` | `/api/facial-enrollment/:residentId/faceid` | Desactiva biometría del residente |
+| `GET` | `/api/facial-enrollment/:residentId/historial` | Consulta auditoría de enrolamientos |
+| `POST` | `/api/facial-access/verificar` | Identifica residente por `faceToken`, `imageUrl` o `imageBase64` |
+| `POST` | `/api/facial-access/ingreso` | Registra ingreso facial con o sin vehículo |
+| `PATCH` | `/api/facial-access/:visitId/salida` | Registra salida |
+
+### Flujo recomendado
+
+1. Crear o actualizar el residente con `foto`.
+2. Enrolar con `POST /api/facial-enrollment/:residentId/enrolar`.
+3. En portería, enviar una captura facial a `/api/facial-access/verificar` o `/api/facial-access/ingreso` usando `imageBase64` o `imageUrl`.
+4. El backend compara la captura contra la foto guardada del residente usando Face++ Compare API.
+
+`src/services/faceioService.js` queda solo como alias temporal hacia `faceppService.js` para evitar rupturas si algún módulo viejo lo importa.
+
+---
+
 ## Orden de Instalación de ZIPs
 
 | ZIP | Contenido                              |

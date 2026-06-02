@@ -9,12 +9,12 @@ const notificationSchema = new mongoose.Schema({
     required: true,
     index:    true,
   },
-  // Destinatario
+  // Destinatario (null = visible para todos los admins del tenant)
   user_id: {
-    type:     mongoose.Schema.Types.ObjectId,
-    ref:      'User',
-    required: true,
-    index:    true,
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'User',
+    default: null,
+    index:   true,
   },
   apartamento: {
     type:  String,
@@ -24,24 +24,42 @@ const notificationSchema = new mongoose.Schema({
   // Contenido
   tipo: {
     type:    String,
-    enum:    ['visita', 'domicilio', 'vehiculo', 'sistema'],
+    enum:    [
+      'visita', 'domicilio', 'vehiculo', 'sistema',
+      'vehiculo_nuevo',      // Vehículo registrado en portería → aviso al admin
+      'permiso_vehiculo',    // Solicitud de permiso → propietario debe responder
+      'permiso_aprobado',    // Propietario dijo Sí → aviso al celador
+      'permiso_rechazado',   // Propietario dijo No → aviso al celador
+      'tecnico_mantenimiento',
+    ],
     default: 'sistema',
   },
   titulo: {
     type:     String,
     required: true,
-    maxlength: 120,
+    maxlength: 200,
   },
   mensaje: {
     type:     String,
     required: true,
-    maxlength: 500,
+    maxlength: 1000,
   },
   // Referencia al registro de visita que generó la notificación
   visit_id: {
     type:    mongoose.Schema.Types.ObjectId,
     ref:     'Visit',
     default: null,
+  },
+  // Referencia al permiso vehicular (cuando tipo = 'permiso_*')
+  permission_id: {
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'VehiclePermission',
+    default: null,
+  },
+  // Indica si el residente debe dar una respuesta (para permisos vehiculares)
+  requiereRespuesta: {
+    type:    Boolean,
+    default: false,
   },
   leida: {
     type:    Boolean,

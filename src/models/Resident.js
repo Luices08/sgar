@@ -38,10 +38,22 @@ const residentSchema = new mongoose.Schema({
     type:    String,
     default: null,
   },
-  // ID generado por FaceIO al momento del enrolamiento biométrico
+  // Token biométrico del proveedor facial externo (Face++). Opcional.
   faceId: {
     type:    String,
     default: null,
+  },
+  // Descriptor facial local generado con face-api.js (128 números Float32).
+  // Se usa para reconocimiento sin depender de APIs externas.
+  faceDescriptor: {
+    type:    [Number],
+    default: null,
+    validate: {
+      validator: function(v) {
+        return v === null || v === undefined || v.length === 128;
+      },
+      message: 'faceDescriptor debe ser un array de 128 números (face-api.js descriptor)',
+    },
   },
   activo: {
     type:    Boolean,

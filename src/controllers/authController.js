@@ -17,11 +17,14 @@ const getUser = () => {
 
 const generateToken = (user) => {
   const payload = {
-    user_id:   user._id,
-    rol:       user.rol,
-    tenant_id: user.tenant_id ? user.tenant_id.toString() : null,
-    nombre:    user.nombre,
-    email:     user.email,
+    user_id:     user._id,
+    rol:         user.rol,
+    tenant_id:   user.tenant_id ? user.tenant_id.toString() : null,
+    nombre:      user.nombre,
+    email:       user.email,
+    // Incluir resident_id cuando el usuario es un residente
+    // (necesario para validar permisos de respuesta de vehículos)
+    resident_id: user.resident_id ? user.resident_id.toString() : null,
   };
 
   // Celadores reciben token de larga duración (tablet dedicada)

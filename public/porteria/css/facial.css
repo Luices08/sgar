@@ -1,0 +1,603 @@
+/* ─── MÓDULO ACCESO FACIAL — Portería SGAR ────────────────────────────────────
+   Estilos para el flujo completo:
+   1. Pantalla cámara / reconocimiento facial
+   2. Modal de confirmación ingreso (pie o vehículo)
+   3. Modal de confirmación salida  (pie o vehículo)
+   4. Drawer de selección de vehículo
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PANTALLA FACIAL — CÁMARA
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+#screen-facial {
+  background: #080f0a;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header de la pantalla facial */
+.facial-header {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  background: linear-gradient(to bottom, rgba(8,15,10,0.95) 0%, transparent 100%);
+}
+
+.facial-header-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.facial-back-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.15s;
+}
+.facial-back-btn:active { background: rgba(255,255,255,0.2); }
+
+/* Contenedor principal de cámara */
+.facial-camera-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#facial-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+  transform: scaleX(-1); /* espejo para frontal */
+}
+
+#facial-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: scaleX(-1);
+}
+
+/* Marco guía central */
+.facial-frame {
+  position: absolute;
+  width: 220px;
+  height: 270px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.facial-frame::before,
+.facial-frame::after,
+.facial-frame .frame-b::before,
+.facial-frame .frame-b::after {
+  content: '';
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-color: var(--acento, #22c55e);
+  border-style: solid;
+}
+.facial-frame::before       { top: 0;    left: 0;   border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+.facial-frame::after        { top: 0;    right: 0;  border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+.facial-frame .frame-b::before { bottom: 0; left: 0;   border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+.facial-frame .frame-b::after  { bottom: 0; right: 0;  border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+
+/* Línea de escaneo animada */
+.scan-line {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--acento, #22c55e), transparent);
+  top: 0;
+  animation: scanAnim 2.4s ease-in-out infinite;
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--acento, #22c55e);
+}
+
+@keyframes scanAnim {
+  0%   { top: 4px;   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: calc(100% - 6px); opacity: 0; }
+}
+
+/* Overlay de estado: reconociendo, detectado, error */
+.facial-status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: linear-gradient(to top, rgba(8,15,10,0.97) 0%, transparent 100%);
+  padding: 32px 20px 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-height: 140px;
+}
+
+.facial-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #555;
+  transition: background 0.3s, box-shadow 0.3s;
+  flex-shrink: 0;
+}
+.facial-status-dot.scanning { background: var(--acento, #22c55e); box-shadow: 0 0 10px var(--acento, #22c55e); animation: pulse-dot 1.2s ease-in-out infinite; }
+.facial-status-dot.detected { background: #22c55e; box-shadow: 0 0 14px #22c55e; }
+.facial-status-dot.error    { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.facial-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.facial-status-text {
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Chip de confianza */
+.confidence-chip {
+  background: rgba(34,197,94,0.15);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: #4ade80;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Botón manual de disparo */
+.facial-capture-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--acento, #22c55e);
+  border: 4px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  box-shadow: 0 0 20px rgba(34,197,94,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.facial-capture-btn:active { transform: scale(0.93); }
+.facial-capture-btn.loading {
+  animation: spin 0.8s linear infinite;
+  pointer-events: none;
+  opacity: 0.7;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.facial-manual-hint {
+  color: rgba(255,255,255,0.4);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   MODAL DE ACCIÓN — Ingreso o Salida
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.facial-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  backdrop-filter: blur(4px);
+}
+.facial-modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.facial-modal {
+  background: #0d1a10;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(255,255,255,0.08);
+  transform: translateY(30px);
+  transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.facial-modal-overlay.open .facial-modal {
+  transform: translateY(0);
+}
+
+/* Perfil del residente */
+.resident-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 18px;
+}
+
+.resident-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
+  background: #1a2e1a;
+}
+
+.resident-avatar-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a3a1a 0%, #0d2010 100%);
+  border: 2px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  flex-shrink: 0;
+}
+
+.resident-info { flex: 1; min-width: 0; }
+.resident-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resident-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 2px;
+}
+
+.resident-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(34,197,94,0.12);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #4ade80;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.resident-badge-dot {
+  width: 6px; height: 6px;
+  background: #4ade80;
+  border-radius: 50%;
+}
+
+/* Título de la acción */
+.action-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+/* Botones de modo: Pie / Vehículo */
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mode-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 18px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.15s, background 0.15s;
+  color: rgba(255,255,255,0.75);
+  font-size: 13px;
+  font-weight: 600;
+}
+.mode-btn:active { transform: scale(0.97); }
+.mode-btn.selected {
+  border-color: var(--acento, #22c55e);
+  background: rgba(34,197,94,0.1);
+  color: #4ade80;
+}
+.mode-btn svg { color: currentColor; }
+
+/* Botón confirmar */
+.confirm-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  background: var(--acento, #22c55e);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.2px;
+}
+.confirm-btn:active { transform: scale(0.98); }
+.confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.confirm-btn.danger  { background: #ef4444; }
+
+/* Botón cancelar/secundario */
+.cancel-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255,255,255,0.45);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  margin-top: 8px;
+}
+.cancel-btn:active { background: rgba(255,255,255,0.05); }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   DRAWER DE VEHÍCULOS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.vehicle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.vehicle-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.vehicle-item:active { transform: scale(0.98); }
+.vehicle-item.selected {
+  border-color: var(--acento, #22c55e);
+  background: rgba(34,197,94,0.08);
+}
+
+.vehicle-plate {
+  background: #1a2e20;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 1.5px;
+  font-family: 'Courier New', monospace;
+  flex-shrink: 0;
+}
+
+.vehicle-desc {
+  flex: 1;
+  min-width: 0;
+}
+.vehicle-desc-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vehicle-desc-apto {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 2px;
+}
+
+.vehicle-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.vehicle-item.selected .vehicle-check {
+  border-color: #4ade80;
+  background: #4ade80;
+}
+.vehicle-check svg { display: none; color: #000; }
+.vehicle-item.selected .vehicle-check svg { display: block; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   TOAST DE ÉXITO FACIAL
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.facial-toast {
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #0d1a10;
+  border: 1px solid rgba(34,197,94,0.3);
+  color: #4ade80;
+  padding: 12px 20px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.facial-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   BOTÓN FACIAL en pantalla principal
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.btn-facial {
+  background: linear-gradient(135deg, #0d2010 0%, #1a3a20 100%);
+  border: 1.5px solid rgba(34,197,94,0.3);
+  color: #4ade80;
+}
+.btn-facial:hover { border-color: #4ade80; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   INDICADOR DE CARGA FACIAL — modelo AI
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.facial-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: #080f0a;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  transition: opacity 0.4s;
+}
+.facial-loading-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.facial-loading-icon {
+  width: 56px;
+  height: 56px;
+  border: 3px solid rgba(255,255,255,0.08);
+  border-top-color: #4ade80;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+.facial-loading-text {
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Drawer oscuro — usado por el módulo facial */
+.facial-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 180;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.facial-drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+.facial-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0d1a10;
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  z-index: 190;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+  padding: 0 0 calc(env(safe-area-inset-bottom,0px));
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+.facial-drawer.open { transform: translateY(0); }
+
+.facial-drawer-handle {
+  width: 40px; height: 4px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+.facial-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.facial-drawer-title { font-size: 15px; font-weight: 700; color: #fff; }
+.facial-drawer-close {
+  background: rgba(255,255,255,0.08);
+  border: none;
+  border-radius: 50%;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: rgba(255,255,255,0.6); font-size: 16px;
+}
+.facial-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 20px;
+}

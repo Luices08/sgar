@@ -25,7 +25,7 @@ const visitSchema = new mongoose.Schema({
   tipo: {
     type:     String,
     required: true,
-    enum:     Object.values(VISIT_TYPES),
+    enum:     [...Object.values(VISIT_TYPES)],
   },
   nombre: {
     type:  String,
@@ -100,6 +100,11 @@ const visitSchema = new mongoose.Schema({
   },
 
   // ─── AUDITORÍA ────────────────────────────────────────────────────────────
+  observaciones: {
+    type:  String,
+    trim:  true,
+    default: null,    // Usado por técnicos de mantenimiento
+  },
   eliminado:  { type: Boolean, default: false },
   auditLog:   { type: [auditEntrySchema], default: [] },
 }, {

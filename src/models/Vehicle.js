@@ -34,6 +34,11 @@ const vehicleSchema = new mongoose.Schema({
     type:    Boolean,
     default: true,
   },
+  // true si fue registrado por el celador en portería (no preregistrado por el AdminConjunto)
+  registradoEnPorteria: {
+    type:    Boolean,
+    default: false,
+  },
 }, {
   timestamps: true,
 });

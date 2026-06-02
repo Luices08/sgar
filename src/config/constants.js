@@ -11,10 +11,24 @@ module.exports = {
 
   // ─── TIPOS DE VISITA ───────────────────────────────────────────────────────
   VISIT_TYPES: {
-    VISITA:    'visita',
-    DOMICILIO: 'domicilio',
-    VEHICULO:  'vehiculo',
+    VISITA:               'visita',
+    DOMICILIO:            'domicilio',
+    VEHICULO:             'vehiculo',
+    TECNICO:              'tecnico_mantenimiento',   // Personal externo de mantenimiento
+    RESIDENTE:            'residente',               // Ingreso/salida de residente
   },
+
+  // ─── ESTADOS DE PERMISO VEHICULAR ─────────────────────────────────────────
+  PERMISSION_STATUS: {
+    PENDIENTE:   'pendiente',
+    APROBADO:    'aprobado',
+    RECHAZADO:   'rechazado',
+    EXPIRADO:    'expirado',
+    COMPLETADO:  'completado',
+  },
+
+  // ─── TIMEOUT PARA PERMISOS VEHICULARES (ms) ────────────────────────────────
+  VEHICLE_PERMISSION_TIMEOUT_MS: 3 * 60 * 1000,   // 3 minutos
 
   // ─── ESTADOS DE SINCRONIZACIÓN ─────────────────────────────────────────────
   SYNC_STATUS: {

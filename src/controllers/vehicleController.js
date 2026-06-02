@@ -9,6 +9,10 @@ const list = asyncHandler(async (req, res) => {
   const limit = Math.min(100, parseInt(req.query.limit) || 50);
   const skip  = (page - 1) * limit;
   const filter = { tenant_id: req.tenantId };
+  if (req.query.activo !== undefined) filter.activo = req.query.activo !== 'false';
+  if (req.query.registradoEnPorteria !== undefined) {
+    filter.registradoEnPorteria = req.query.registradoEnPorteria !== 'false';
+  }
   if (req.query.q) {
     const re = new RegExp(req.query.q, 'i');
     filter.$or = [{ placa: re }, { apartamento: re }, { descripcion: re }];
@@ -18,6 +22,17 @@ const list = asyncHandler(async (req, res) => {
     Vehicle.countDocuments(filter),
   ]);
   return paginated(res, vehicles, total, page, limit);
+});
+
+// ─── LISTAR VEHÍCULOS POR RESIDENTE ─────────────────────────────────────────
+const listByResident = asyncHandler(async (req, res) => {
+  const vehicles = await Vehicle.find({
+    tenant_id:   req.tenantId,
+    resident_id: req.params.residentId,
+    activo:      true,
+  }).sort({ placa: 1 }).lean();
+
+  return ok(res, { vehicles, total: vehicles.length });
 });
 
 const create = asyncHandler(async (req, res) => {
@@ -54,4 +69,4 @@ const remove = asyncHandler(async (req, res) => {
   return ok(res, {}, 'Vehículo eliminado');
 });
 
-module.exports = { list, create, update, remove };
+module.exports = { list, listByResident, create, update, remove };

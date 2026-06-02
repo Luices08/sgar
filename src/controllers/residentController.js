@@ -4,10 +4,12 @@ const bcrypt      = require('bcryptjs');
 const asyncHandler= require('../utils/asyncHandler');
 const { ok, created, error, paginated } = require('../utils/response');
 const { ROLES }   = require('../config/constants');
-const faceioService = require('../services/faceioService');
 
-const Resident = require('../models/Resident');
-const User     = require('../models/User');
+const Resident         = require('../models/Resident');
+const User             = require('../models/User');
+const Visit            = require('../models/Visit');
+const VehicleAccessLog = require('../models/VehicleAccessLog');
+const { VISIT_TYPES }  = require('../config/constants');
 
 // ─── LISTAR RESIDENTES ────────────────────────────────────────────────────────
 const list = asyncHandler(async (req, res) => {
@@ -57,37 +59,23 @@ const create = asyncHandler(async (req, res) => {
     fotoUrl,
   });
 
-  // Enrolamiento FaceIO automático si hay foto configurada
-  if (fotoUrl && process.env.FACEIO_API_KEY) {
-    try {
-      const faceioResult = await faceioService.enrollFace(fotoUrl);
-      if (faceioResult && faceioResult.faceId) {
-        resident.faceId = faceioResult.faceId;
-        await resident.save();
-        console.log(`FaceID enrollado para residente ${resident._id}: ${faceioResult.faceId}`);
-      }
-    } catch (faceioError) {
-      console.warn('Error en enrolamiento FaceIO (continuando sin él):', faceioError.message);
-      // Continuamos sin FaceIO - no es crítico para la creación del residente
-    }
-  }
-
   return created(res, { resident }, 'Residente creado');
 });
 
-// ─── ACTUALIZAR faceId (POST-enrolamiento FaceIO) ─────────────────────────────
+// ─── ACTUALIZAR token facial (compatibilidad) ─────────────────────────────────
 const updateFaceId = asyncHandler(async (req, res) => {
-  const { faceId } = req.body;
-  if (!faceId) return error(res, 'faceId es requerido', 400);
+  const { faceId, faceToken } = req.body;
+  const token = faceId || faceToken;
+  if (!token) return error(res, 'faceId o faceToken es requerido', 400);
 
   const resident = await Resident.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.tenantId },
-    { faceId },
+    { faceId: token },
     { new: true }
   );
 
   if (!resident) return error(res, 'Residente no encontrado', 404);
-  return ok(res, { resident }, 'faceId actualizado');
+  return ok(res, { resident }, 'Token facial actualizado');
 });
 
 // ─── ACTUALIZAR RESIDENTE ─────────────────────────────────────────────────────
@@ -176,4 +164,28 @@ const bulkImport = asyncHandler(async (req, res) => {
   return ok(res, results, `Importación: ${results.created} creados, ${results.errors.length} errores`);
 });
 
-module.exports = { list, getOne, create, updateFaceId, update, createAccount, bulkImport };
+// ─── INGRESO ABIERTO (sin salida) ────────────────────────────────────────────
+// GET /api/residents/:id/open-visit
+// Devuelve el registro de visita activo (tipo=residente) sin hora de salida.
+const getOpenVisit = asyncHandler(async (req, res) => {
+  const visit = await Visit.findOne({
+    tenant_id:   req.tenantId,
+    resident_id: req.params.id,
+    tipo:        VISIT_TYPES.RESIDENTE,
+    horaSalida:  null,
+  })
+    .sort({ horaIngreso: -1 })
+    .lean();
+
+  if (!visit) return ok(res, { visit: null, vehicleLog: null }, 'Sin ingreso abierto');
+
+  const vehicleLog = await VehicleAccessLog.findOne({
+    tenant_id:  req.tenantId,
+    visit_id:   visit._id,
+    horaSalida: null,
+  }).lean();
+
+  return ok(res, { visit, vehicleLog }, 'Ingreso abierto encontrado');
+});
+
+module.exports = { list, getOne, create, updateFaceId, update, createAccount, bulkImport, getOpenVisit };
