@@ -74,7 +74,12 @@ const login = asyncHandler(async (req, res) => {
   if (user.tenant_id) {
     const Tenant = require('../models/Tenant');
     const tenant = await Tenant.findById(user.tenant_id)
-                               .select('nombre colorAcento imagenUrl tenant_id deliveryEmpresas');
+                               .select('nombre colorAcento imagenUrl tenant_id deliveryEmpresas activo');
+                               
+    if (!tenant || !tenant.activo) {
+      return error(res, 'Conjunto desactivado', 403);
+    }
+
     if (tenant) {
       tenantConfig = {
         tenant_id:        tenant.tenant_id,

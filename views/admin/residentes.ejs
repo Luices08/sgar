@@ -57,8 +57,20 @@
         </div>
       </div>
       <div class="form-field">
-        <label>Email</label>
+        <label>Email (Requerido para acceso al portal)</label>
         <input type="email" id="r-email" placeholder="residente@ejemplo.com">
+      </div>
+      <div class="form-field" id="field-r-estado" style="display:none">
+        <label>Estado del residente</label>
+        <select id="r-activo">
+          <option value="true">Activo</option>
+          <option value="false">Desactivado</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Contraseña (Requerida para acceso al portal)</label>
+        <input type="password" id="r-password" placeholder="Mínimo 6 caracteres" minlength="6">
+        <small style="color: #666; font-size: 0.8rem; margin-top: 4px; display: block;">Si deja este campo vacío en una edición, la contraseña no cambiará.</small>
       </div>
       <div class="form-field">
         <label>Teléfono</label>
@@ -84,7 +96,7 @@
         </div>
       </div>
       <div id="r-form-error" class="form-error" style="display:none"></div>
-      <button type="submit" class="btn-primary btn-block">Guardar</button>
+      <button type="submit" class="btn-primary btn-block" style="margin-bottom:10px;">Guardar</button>
       <button type="button" class="btn-secondary btn-block" id="btn-create-account" style="display:none">
         Crear cuenta de acceso
       </button>

@@ -71,6 +71,13 @@
         <label>Descripción</label>
         <textarea id="f-descripcion" rows="3" placeholder="Descripción breve…"></textarea>
       </div>
+      <div class="form-field" id="field-estado" style="display:none">
+        <label>Estado del conjunto</label>
+        <select id="f-activo">
+          <option value="true">Activo</option>
+          <option value="false">Desactivado</option>
+        </select>
+      </div>
       <div class="form-field">
         <label>Color de acento</label>
         <div class="color-row">
@@ -82,21 +89,58 @@
         <label>Imagen del conjunto</label>
         <input type="file" id="f-imagen" accept="image/*">
       </div>
-      <div class="form-divider">Administrador del conjunto</div>
-      <div class="form-field">
-        <label>Email del admin *</label>
-        <input type="email" id="f-admin-email" placeholder="admin@conjunto.com">
+      <div id="admin-fields">
+        <div class="form-divider">Administrador del conjunto</div>
+        <div class="form-field">
+          <label>Email del admin *</label>
+          <input type="email" id="f-admin-email" placeholder="admin@conjunto.com">
+        </div>
+        <div class="form-field">
+          <label>Nombre del admin</label>
+          <input type="text" id="f-admin-nombre" placeholder="Nombre completo">
+        </div>
+        <div class="form-field">
+          <label>Contraseña inicial</label>
+          <input type="text" id="f-admin-pwd" placeholder="123456 (por defecto)">
+        </div>
       </div>
-      <div class="form-field">
-        <label>Nombre del admin</label>
-        <input type="text" id="f-admin-nombre" placeholder="Nombre completo">
+      <div id="admin-crud-section" style="display:none; margin-top: 20px;">
+        <div class="form-divider">Administradores del Conjunto</div>
+        <div class="table-wrapper" style="margin-bottom: 10px;">
+          <table class="data-table" style="font-size:0.85rem">
+            <thead>
+              <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody id="admins-tbody">
+            </tbody>
+          </table>
+        </div>
+        <button type="button" class="btn-secondary btn-sm" id="btn-add-admin">+ Añadir Administrador</button>
       </div>
-      <div class="form-field">
-        <label>Contraseña inicial</label>
-        <input type="text" id="f-admin-pwd" placeholder="123456 (por defecto)">
-      </div>
+
       <div id="form-error" class="form-error" style="display:none"></div>
-      <button type="submit" class="btn-primary btn-block">Guardar conjunto</button>
+      <button type="submit" class="btn-primary btn-block" style="margin-top: 20px;">Guardar conjunto</button>
+    </form>
+  </div>
+</aside>
+
+<!-- DRAWER: Administrador -->
+<div class="drawer-overlay" id="drawer-admin-overlay" style="z-index: 1050; display:none"></div>
+<aside class="drawer" id="drawer-admin" style="z-index: 1051; width: 350px;">
+  <div class="drawer-header">
+    <h2 class="drawer-title" id="admin-drawer-title">Nuevo Admin</h2>
+    <button class="drawer-close" id="admin-drawer-close" type="button">✕</button>
+  </div>
+  <div class="drawer-body">
+    <form id="form-admin">
+      <input type="hidden" id="admin-edit-id">
+      <div class="form-field"><label>Nombre *</label><input type="text" id="a-nombre" required></div>
+      <div class="form-field"><label>Email *</label><input type="email" id="a-email" required></div>
+      <div class="form-field"><label id="a-pwd-label">Contraseña</label><input type="password" id="a-pwd">
+        <small id="a-pwd-hint">min 6 caracteres. Dejar en blanco si no desea cambiarla.</small>
+      </div>
+      <div id="a-form-error" class="form-error" style="display:none"></div>
+      <button type="submit" class="btn-primary btn-block">Guardar Admin</button>
     </form>
   </div>
 </aside>

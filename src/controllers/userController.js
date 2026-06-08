@@ -1,6 +1,7 @@
 'use strict';
 
 const bcrypt      = require('bcryptjs');
+const crypto      = require('crypto');
 const asyncHandler= require('../utils/asyncHandler');
 const { ok, created, error, paginated } = require('../utils/response');
 const { ROLES }   = require('../config/constants');
@@ -27,8 +28,8 @@ const list = asyncHandler(async (req, res) => {
 // ─── CREAR USUARIO ────────────────────────────────────────────────────────────
 const create = asyncHandler(async (req, res) => {
   const { nombre, email, password, rol, tenant_id } = req.body;
-  if (!nombre || !email || !password || !rol) {
-    return error(res, 'nombre, email, password y rol son requeridos', 400);
+  if (!nombre || !email || !rol) {
+    return error(res, 'nombre, email y rol son requeridos', 400);
   }
 
   // Solo AdminControl puede crear otros AdminControl
@@ -39,7 +40,33 @@ const create = asyncHandler(async (req, res) => {
   const exists = await User.findOne({ email: email.toLowerCase() });
   if (exists) return error(res, 'El email ya está registrado', 409);
 
-  const hashed = await bcrypt.hash(password, 12);
+  // Limitar a 3 admins por conjunto si el rol es adminConjunto
+  if (rol === ROLES.ADMIN_CONJUNTO) {
+    const filterTenant = tenant_id || req.tenantId || null;
+    const adminCount = await User.countDocuments({ tenant_id: filterTenant, rol: ROLES.ADMIN_CONJUNTO });
+    if (adminCount >= 3) {
+      return error(res, 'Límite máximo de 3 administradores por conjunto alcanzado', 400);
+    }
+  }
+
+  // Manejo especial para residentes: permitir omitir contraseña generando una
+  let passwordToHash = password;
+  let plainPassword = undefined;
+
+  if (rol !== ROLES.RESIDENTE) {
+    if (!passwordToHash || passwordToHash.length < 6) {
+      return error(res, 'password es requerida (min 6 caracteres)', 400);
+    }
+  } else {
+    // Para residentes, si no se envía o es muy corta, generamos una contraseña segura
+    if (!passwordToHash || passwordToHash.length < 6) {
+      // generar una contraseña alfanumérica corta y legible
+      passwordToHash = crypto.randomBytes(6).toString('base64').replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
+      plainPassword = passwordToHash;
+    }
+  }
+
+  const hashed = await bcrypt.hash(passwordToHash, 12);
   const user   = await User.create({
     nombre,
     email:    email.toLowerCase().trim(),
@@ -49,7 +76,11 @@ const create = asyncHandler(async (req, res) => {
     activo:    true,
   });
 
-  return created(res, { user: { ...user.toObject(), password: undefined } }, 'Usuario creado');
+  const userObj = { ...user.toObject(), password: undefined };
+  const payload = { user: userObj };
+  if (plainPassword) payload.plainPassword = plainPassword;
+
+  return created(res, payload, 'Usuario creado');
 });
 
 // ─── ACTUALIZAR ESTADO ────────────────────────────────────────────────────────
@@ -84,4 +115,39 @@ const resetPassword = asyncHandler(async (req, res) => {
   return ok(res, {}, 'Contraseña restablecida');
 });
 
-module.exports = { list, create, toggleActive, resetPassword };
+// ─── ELIMINAR USUARIO ──────────────────────────────────────────────────────────
+const remove = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) return error(res, 'Usuario no encontrado', 404);
+
+  // Verificar que pertenece al tenant (excepto AdminControl)
+  if (req.user.rol !== ROLES.ADMIN_CONTROL) {
+    if (!user.tenant_id || user.tenant_id.toString() !== req.tenantId.toString()) {
+      return error(res, 'Sin permisos sobre este usuario', 403);
+    }
+  }
+
+  await User.findByIdAndDelete(req.params.id);
+  return ok(res, {}, 'Usuario eliminado exitosamente');
+});
+
+// ─── ACTUALIZAR USUARIO ───────────────────────────────────────────────────────
+const update = asyncHandler(async (req, res) => {
+  const { nombre, email } = req.body;
+  const user = await User.findById(req.params.id);
+  if (!user) return error(res, 'Usuario no encontrado', 404);
+
+  if (req.user.rol !== ROLES.ADMIN_CONTROL) {
+    if (!user.tenant_id || user.tenant_id.toString() !== req.tenantId.toString()) {
+      return error(res, 'Sin permisos sobre este usuario', 403);
+    }
+  }
+
+  if (nombre !== undefined) user.nombre = nombre;
+  if (email !== undefined) user.email = email.toLowerCase().trim();
+
+  await user.save();
+  return ok(res, { user }, 'Usuario actualizado exitosamente');
+});
+
+module.exports = { list, create, update, toggleActive, resetPassword, remove };

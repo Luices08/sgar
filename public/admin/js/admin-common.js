@@ -5,7 +5,11 @@ const SGAR = (() => {
   /* ── TOKEN & USER ──────────────────────────────────────────────────────────── */
   const getToken  = () => localStorage.getItem('sgar_token');
   const getUser   = () => JSON.parse(localStorage.getItem('sgar_user') || 'null');
-  const getTenant = () => JSON.parse(localStorage.getItem('sgar_tenant') || 'null');
+  const getTenant = () => {
+    const imp = localStorage.getItem('sgar_impersonate_tenant');
+    if (imp) return JSON.parse(imp);
+    return JSON.parse(localStorage.getItem('sgar_tenant') || 'null');
+  };
 
   function requireAuth() {
     const user = getUser();
@@ -14,13 +18,26 @@ const SGAR = (() => {
     return user;
   }
 
-  /* ── ACCENT COLOR ──────────────────────────────────────────────────────────── */
+  /* ── ACCENT COLOR & IMPERSONATION UI ───────────────────────────────────────── */
   function applyAccent() {
     const user   = getUser();
     const tenant = getTenant();
+    const imp    = localStorage.getItem('sgar_impersonate_tenant');
     let color;
+    
     if (user && user.rol === 'adminControl') {
-      color = getComputedStyle(document.documentElement).getPropertyValue('--acento').trim() || '#1a1a2e';
+      if (imp) {
+        // Impersonando
+        document.getElementById('nav-admincontrol').style.display = 'none';
+        document.getElementById('nav-adminconjunto').style.display = '';
+        document.getElementById('btn-exit-impersonate').style.display = 'flex';
+        color = (tenant && tenant.colorAcento) ? tenant.colorAcento : '#1a1a2e';
+      } else {
+        // Normal adminControl
+        document.getElementById('nav-admincontrol').style.display = '';
+        document.getElementById('nav-adminconjunto').style.display = 'none';
+        color = getComputedStyle(document.documentElement).getPropertyValue('--acento').trim() || '#1a1a2e';
+      }
     } else {
       color = (tenant && tenant.colorAcento) ? tenant.colorAcento : '#1a1a2e';
     }
@@ -30,6 +47,22 @@ const SGAR = (() => {
   /* ── API FETCH ─────────────────────────────────────────────────────────────── */
   async function api(path, options = {}) {
     const token = getToken();
+    const user = getUser();
+    const imp = localStorage.getItem('sgar_impersonate_tenant');
+
+    if (user && user.rol === 'adminControl' && imp) {
+      const impTenant = JSON.parse(imp);
+      if (options.method && options.method !== 'GET' && options.method !== 'HEAD') {
+        if (!options.body) options.body = '{}';
+        const bodyObj = JSON.parse(options.body);
+        bodyObj.tenant_id = impTenant._id;
+        options.body = JSON.stringify(bodyObj);
+      } else {
+        const sep = path.includes('?') ? '&' : '?';
+        path += `${sep}tenant_id=${impTenant._id}`;
+      }
+    }
+
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -43,6 +76,13 @@ const SGAR = (() => {
 
   async function apiForm(path, formData, method = 'POST') {
     const token = getToken();
+    const user = getUser();
+    const imp = localStorage.getItem('sgar_impersonate_tenant');
+    if (user && user.rol === 'adminControl' && imp) {
+      const impTenant = JSON.parse(imp);
+      formData.append('tenant_id', impTenant._id);
+    }
+
     const headers = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
     const res = await fetch(path, { method, headers, body: formData });
@@ -55,6 +95,7 @@ const SGAR = (() => {
     localStorage.removeItem('sgar_token');
     localStorage.removeItem('sgar_user');
     localStorage.removeItem('sgar_tenant');
+    localStorage.removeItem('sgar_impersonate_tenant');
     document.cookie = 'token=; Max-Age=0; path=/';
     window.location.href = '/admin/login';
   }
@@ -135,6 +176,14 @@ const SGAR = (() => {
   function initLogout() {
     const btn = document.getElementById('btn-logout');
     if (btn) btn.addEventListener('click', logout);
+    
+    const exitBtn = document.getElementById('btn-exit-impersonate');
+    if (exitBtn) {
+      exitBtn.addEventListener('click', () => {
+        localStorage.removeItem('sgar_impersonate_tenant');
+        window.location.href = '/admin/dashboard';
+      });
+    }
   }
 
   /* ── SHOW ERROR ────────────────────────────────────────────────────────────── */

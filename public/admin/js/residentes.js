@@ -116,6 +116,7 @@ async function loadResidents() {
       <td>${SGAR.activeBadge(r.activo)}</td>
       <td>
         <button class="btn-secondary btn-sm" onclick="openEdit(${JSON.stringify(r).replace(/"/g,'&quot;')})">Editar</button>
+        <button class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f; margin-left: 5px;" onclick="deleteResident('${r._id}')">Eliminar</button>
       </td>
     </tr>
   `).join('');
@@ -131,6 +132,7 @@ function openNew() {
   document.getElementById('drawer-title').textContent = 'Nuevo Residente';
   document.getElementById('form-resident').reset();
   document.getElementById('btn-create-account').style.display = 'none';
+  document.getElementById('field-r-estado').style.display = 'none';
   resetCameraCapture();
   SGAR.clearFormError('r-form-error');
   SGAR.openDrawer('drawer-resident');
@@ -145,6 +147,8 @@ function openEdit(r) {
   document.getElementById('r-email').value       = r.email       || '';
   document.getElementById('r-telefono').value    = r.telefono    || '';
   document.getElementById('btn-create-account').style.display = r.user_id ? 'none' : 'block';
+  document.getElementById('r-activo').value = r.activo ? 'true' : 'false';
+  document.getElementById('field-r-estado').style.display = 'block';
   resetCameraCapture();
   setExistingFacePreview(r.faceId);
   SGAR.clearFormError('r-form-error');
@@ -333,7 +337,11 @@ async function submitResident(e) {
   fd.append('apartamento', document.getElementById('r-apartamento').value.trim());
   fd.append('cedula',      document.getElementById('r-cedula').value.trim());
   fd.append('email',       document.getElementById('r-email').value.trim());
+  fd.append('password',    document.getElementById('r-password')?.value || '');
   fd.append('telefono',    document.getElementById('r-telefono').value.trim());
+  if (editId) {
+    fd.append('activo', document.getElementById('r-activo').value);
+  }
   // NO se adjunta foto — solo el descriptor va al endpoint de enrolamiento
 
   const submitBtn = e.submitter || document.querySelector('#form-resident button[type="submit"]');
@@ -376,8 +384,31 @@ async function submitResident(e) {
 async function createAccount() {
   const editId = document.getElementById('r-edit-id').value;
   if (!editId) return;
-  const res = await SGAR.api(`/api/residents/${editId}/account`, { method: 'POST' });
+
+  const password = document.getElementById('r-password').value;
+  if (!password || password.length < 6) {
+    alert('Debe ingresar una contraseña de al menos 6 caracteres para crear la cuenta de acceso.');
+    return;
+  }
+
+  const res = await SGAR.api(`/api/residents/${editId}/account`, {
+    method: 'POST',
+    body: JSON.stringify({ password })
+  });
+
   if (!res?.success) { alert(res?.message || 'Error al crear cuenta'); return; }
-  alert(`Cuenta creada.\nEmail: ${res.data.email}\nContraseña inicial: ${res.data.password_inicial}`);
+  alert(`Cuenta creada exitosamente.\nEmail: ${res.data.email}`);
   SGAR.closeDrawer('drawer-resident');
+  loadResidents();
+}
+
+async function deleteResident(editId) {
+  if (!editId) return;
+  if (!confirm('¿Estás seguro de eliminar este residente? Esta acción no se puede deshacer.')) return;
+  const res = await SGAR.api(`/api/residents/${editId}`, { method: 'DELETE' });
+  if (!res || !res.success) {
+    alert(res?.message || 'Error al eliminar');
+    return;
+  }
+  loadResidents();
 }

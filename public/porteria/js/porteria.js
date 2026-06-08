@@ -21,55 +21,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const user  = localStorage.getItem('sgar_user');
   if (token && user) {
     await initApp();
+  } else {
+    window.location.href = '/admin/login';
+    return;
   }
-
-  // Eventos de login
-  document.getElementById('btn-login').addEventListener('click', doLogin);
-  document.getElementById('login-pwd').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doLogin();
-  });
 
   // Monitorear conexión
   initConnectionMonitor();
 });
-
-/* ─── LOGIN ──────────────────────────────────────────────────────────────────── */
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pwd   = document.getElementById('login-pwd').value;
-  const btn   = document.getElementById('btn-login');
-  const err   = document.getElementById('login-error');
-
-  if (!email || !pwd) { showLoginError('Completa todos los campos'); return; }
-
-  btn.disabled    = true;
-  btn.textContent = 'Ingresando…';
-  err.style.display = 'none';
-
-  const res = await porteriaAPI.login(email, pwd);
-
-  btn.disabled    = false;
-  btn.textContent = 'Ingresar';
-
-  if (!res?.success) {
-    showLoginError(res?.message || 'Error al iniciar sesión');
-    return;
-  }
-
-  if (res.data.user.rol !== 'celador') {
-    // Redirigir al panel si no es celador
-    window.location.href = '/admin/dashboard';
-    return;
-  }
-
-  await initApp();
-}
-
-function showLoginError(msg) {
-  const el = document.getElementById('login-error');
-  el.textContent   = msg;
-  el.style.display = 'block';
-}
 
 /* ─── INICIALIZAR APP (post-login) ───────────────────────────────────────────── */
 async function initApp() {

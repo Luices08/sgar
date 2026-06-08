@@ -136,7 +136,7 @@ const porteriaAPI = (() => {
     try { await request('/api/auth/logout', { method: 'POST' }); } catch (_) {}
     localStorage.clear();
     document.cookie = 'token=; Max-Age=0; path=/';
-    window.location.reload();
+    window.location.href = '/admin/login';
   }
 
   return { login, registrarVisita, syncPendientes, validarInvitacion, completarInvitacion, buscarPlaca, logout, cargarDatosOffline, request };

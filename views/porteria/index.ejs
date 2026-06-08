@@ -16,51 +16,9 @@
 </head>
 <body>
 
-<!-- ─── PANTALLA LOGIN ───────────────────────────────────────────────────────── -->
-<div id="screen-login" class="screen active">
-  <div class="login-bg">
-    <div class="login-mesh"></div>
-    <div class="login-grid"></div>
-    <div class="login-particles" id="login-particles"></div>
-  </div>
-  <div class="login-wrap">
-    <div class="login-brand">
-      <div class="login-brand-logo">
-        <svg viewBox="0 0 24 24" width="30" height="30" fill="#fff">
-          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-        </svg>
-      </div>
-      <h1 class="login-brand-title">Portería</h1>
-      <p class="login-brand-sub">SGAR · Control de acceso</p>
-    </div>
-    <div class="login-card">
-      <div id="login-error" class="login-alert" style="display:none"></div>
-      <div class="login-field">
-        <label>Correo electrónico</label>
-        <div class="login-input-wrap">
-          <svg class="login-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-          </svg>
-          <input class="login-input" type="email" id="login-email" placeholder="celador@ejemplo.com" autocomplete="email">
-        </div>
-      </div>
-      <div class="login-field">
-        <label>Contraseña</label>
-        <div class="login-input-wrap">
-          <svg class="login-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <input class="login-input" type="password" id="login-pwd" placeholder="••••••••" autocomplete="current-password">
-        </div>
-      </div>
-      <button class="login-btn" id="btn-login">Iniciar sesión</button>
-    </div>
-    <p class="login-footer">SGAR · ADSO 3142784</p>
-  </div>
-</div>
 
 <!-- ─── PANTALLA PRINCIPAL (ACCIÓN) ──────────────────────────────────────────── -->
-<div id="screen-main" class="screen">
+<div id="screen-main" class="screen active">
   <!-- Header -->
   <header class="app-header">
     <div class="header-left">
@@ -329,21 +287,6 @@
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="/static/porteria/js/facial.js"></script>
 <script src="/static/porteria/js/porteria.js"></script>
-<script>
-// Generate login particles
-(function() {
-  const c = document.getElementById('login-particles');
-  if (!c) return;
-  for (let i = 0; i < 25; i++) {
-    const p = document.createElement('div');
-    p.className = 'login-particle';
-    p.style.left = Math.random() * 100 + '%';
-    p.style.animationDuration = (8 + Math.random() * 14) + 's';
-    p.style.animationDelay = (Math.random() * 8) + 's';
-    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
-    c.appendChild(p);
-  }
-})();
-</script>
+
 </body>
 </html>

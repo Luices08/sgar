@@ -102,9 +102,6 @@ npm start       # Producción
 | Interfaz          | URL                          | Usuario demo                    |
 |-------------------|------------------------------|---------------------------------|
 | Panel Admin       | http://localhost:3000/admin  | admin@sgar.local / admin123     |
-| AdminConjunto     | http://localhost:3000/admin  | admin.lospinos@sgar.local / ... |
-| Portería (PWA)    | http://localhost:3000/porteria| celador1@sgar.local / celador123|
-| Residente (PWA)   | http://localhost:3000/residente| (crear desde AdminConjunto)   |
 
 ---
 

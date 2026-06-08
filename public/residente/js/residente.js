@@ -25,66 +25,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Eventos login
-  document.getElementById('btn-login').addEventListener('click', doLogin);
-  document.getElementById('login-pwd').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doLogin();
-  });
+  window.location.href = '/admin/login';
 });
-
-/* ─── LOGIN ──────────────────────────────────────────────────────────────────── */
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pwd   = document.getElementById('login-pwd').value;
-  const btn   = document.getElementById('btn-login');
-  const err   = document.getElementById('login-error');
-
-  if (!email || !pwd) { showLoginErr('Completa todos los campos'); return; }
-
-  btn.disabled = true; btn.textContent = 'Ingresando…';
-  err.style.display = 'none';
-
-  try {
-    const res = await apiCall('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password: pwd }),
-    }, false);
-
-    if (!res?.success) { showLoginErr(res?.message || 'Credenciales inválidas'); return; }
-
-    const { token, user, tenantConfig } = res.data;
-
-    if (user.rol !== 'residente') {
-      showLoginErr('Esta app es solo para residentes');
-      return;
-    }
-
-    localStorage.setItem('sgar_token', token);
-    localStorage.setItem('sgar_user', JSON.stringify(user));
-    if (tenantConfig?.colorAcento) {
-      localStorage.setItem('sgar_res_color', tenantConfig.colorAcento);
-      document.documentElement.style.setProperty('--acento', tenantConfig.colorAcento);
-    }
-
-    await initApp(user);
-
-  } catch (e) {
-    showLoginErr('Error de conexión');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Ingresar';
-  }
-}
-
-function showLoginErr(msg) {
-  const el = document.getElementById('login-error');
-  el.textContent = msg; el.style.display = 'block';
-}
 
 /* ─── INICIALIZAR APP ────────────────────────────────────────────────────────── */
 async function initApp(user) {
-  // Mostrar pantalla principal
-  document.getElementById('screen-login').classList.remove('active');
-  document.getElementById('screen-main').classList.add('active');
 
   // Cargar datos del residente
   try {
@@ -362,7 +307,7 @@ async function doLogout() {
   localStorage.removeItem('sgar_token');
   localStorage.removeItem('sgar_user');
   document.cookie = 'token=; Max-Age=0; path=/';
-  window.location.reload();
+  window.location.href = '/admin/login';
 }
 
 /* ─── API HELPER ─────────────────────────────────────────────────────────────── */

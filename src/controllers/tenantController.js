@@ -154,4 +154,44 @@ const analytics = asyncHandler(async (req, res) => {
   return ok(res, { analytics: data });
 });
 
-module.exports = { list, getOne, create, update, analytics };
+// ─── ELIMINAR TENANT ──────────────────────────────────────────────────────────
+const remove = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+  if (!password) {
+    return error(res, 'Debe proporcionar su contraseña para confirmar la eliminación', 400);
+  }
+
+  // Verificar contraseña del adminControl (req.user)
+  const currentUser = await User.findById(req.user.user_id).select('+password');
+  if (!currentUser) return error(res, 'Usuario no encontrado', 404);
+
+  const match = await bcrypt.compare(password, currentUser.password);
+  if (!match) return error(res, 'Contraseña incorrecta', 401);
+
+  const tenantId = req.params.id;
+  const tenant = await Tenant.findById(tenantId);
+  if (!tenant) return error(res, 'Conjunto no encontrado', 404);
+
+  // Eliminar todos los vínculos
+  const Resident = require('../models/Resident');
+  const Visit = require('../models/Visit');
+  const VehicleAccessLog = require('../models/VehicleAccessLog');
+  const FacialEnrollment = require('../models/FacialEnrollment');
+  const Notification = require('../models/Notification');
+  const Invitation = require('../models/Invitation');
+
+  await Promise.all([
+    User.deleteMany({ tenant_id: tenantId }),
+    Resident.deleteMany({ tenant_id: tenantId }),
+    Visit.deleteMany({ tenant_id: tenantId }),
+    VehicleAccessLog.deleteMany({ tenant_id: tenantId }),
+    FacialEnrollment.deleteMany({ tenant_id: tenantId }),
+    Notification.deleteMany({ tenant_id: tenantId }),
+    Invitation.deleteMany({ tenant_id: tenantId }),
+    Tenant.findByIdAndDelete(tenantId),
+  ]);
+
+  return ok(res, {}, 'Conjunto y todos sus vínculos eliminados exitosamente');
+});
+
+module.exports = { list, getOne, create, update, analytics, remove };

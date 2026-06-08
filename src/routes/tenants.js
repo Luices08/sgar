@@ -17,5 +17,6 @@ router.get('/',          auth, authorize.onlyAdmin, c.list);
 router.get('/:id',       auth, authorize.adminAndConjunto, c.getOne);
 router.post('/',         auth, authorize.onlyAdmin, upload.single('imagen_conjunto'), c.create);
 router.put('/:id',       auth, authorize.onlyAdmin, upload.single('imagen_conjunto'), c.update);
+router.delete('/:id',    auth, authorize.onlyAdmin, c.remove);
 
 module.exports = router;

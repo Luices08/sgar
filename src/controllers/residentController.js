@@ -59,6 +59,27 @@ const create = asyncHandler(async (req, res) => {
     fotoUrl,
   });
 
+  // Si se envía una contraseña y hay email, crear cuenta de usuario inmediatamente
+  if (req.body.password && req.body.password.length >= 6 && email) {
+    try {
+      const hashed = await bcrypt.hash(req.body.password, 12);
+      const user = await User.create({
+        nombre:    nombre,
+        email:     email.toLowerCase().trim(),
+        password:  hashed,
+        rol:       ROLES.RESIDENTE,
+        tenant_id: req.tenantId,
+        resident_id: resident._id,
+        activo:    true,
+      });
+      resident.user_id = user._id;
+      await resident.save();
+    } catch (e) {
+      // No abortar creación del residente si falla la creación de usuario
+      console.warn('No se pudo crear usuario para residente:', e.message);
+    }
+  }
+
   return created(res, { resident }, 'Residente creado');
 });
 
@@ -80,7 +101,7 @@ const updateFaceId = asyncHandler(async (req, res) => {
 
 // ─── ACTUALIZAR RESIDENTE ─────────────────────────────────────────────────────
 const update = asyncHandler(async (req, res) => {
-  const { nombre, cedula, apartamento, telefono, email, activo } = req.body;
+  const { nombre, cedula, apartamento, telefono, email, activo, password } = req.body;
   const updateData = {};
   if (nombre      !== undefined) updateData.nombre      = nombre;
   if (cedula      !== undefined) updateData.cedula      = cedula;
@@ -97,6 +118,30 @@ const update = asyncHandler(async (req, res) => {
   );
 
   if (!resident) return error(res, 'Residente no encontrado', 404);
+
+  // Si envían password y el residente tiene usuario, actualizar la contraseña
+  if (password && password.length >= 6 && resident.user_id) {
+    const hashed = await bcrypt.hash(password, 12);
+    await User.findByIdAndUpdate(resident.user_id, { password: hashed, email: email || resident.email });
+  } else if (password && password.length >= 6 && !resident.user_id && resident.email) {
+    // Si envían password, no tenía usuario y sí tiene email, se lo creamos
+    const hashed = await bcrypt.hash(password, 12);
+    const user = await User.create({
+      nombre:    resident.nombre,
+      email:     resident.email.toLowerCase().trim(),
+      password:  hashed,
+      rol:       ROLES.RESIDENTE,
+      tenant_id: req.tenantId,
+      resident_id: resident._id,
+      activo:    true,
+    });
+    resident.user_id = user._id;
+    await resident.save();
+  } else if (email && resident.user_id) {
+    // Si cambia el email, sincronizar con el User
+    await User.findByIdAndUpdate(resident.user_id, { email: email.toLowerCase().trim() });
+  }
+
   return ok(res, { resident }, 'Residente actualizado');
 });
 
@@ -107,9 +152,12 @@ const createAccount = asyncHandler(async (req, res) => {
   if (resident.user_id) return error(res, 'Este residente ya tiene cuenta de acceso', 409);
   if (!resident.email)  return error(res, 'El residente no tiene email registrado', 400);
 
-  // Contraseña inicial = número de cédula
-  const initialPwd = resident.cedula || '123456';
-  const hashed     = await bcrypt.hash(initialPwd, 12);
+  const providedPwd = req.body.password;
+  if (!providedPwd || providedPwd.length < 6) {
+    return error(res, 'Debe proporcionar una contraseña de al menos 6 caracteres', 400);
+  }
+
+  const hashed = await bcrypt.hash(providedPwd, 12);
 
   const user = await User.create({
     nombre:    resident.nombre,
@@ -127,8 +175,7 @@ const createAccount = asyncHandler(async (req, res) => {
   return created(res, {
     user_id:   user._id,
     email:     user.email,
-    password_inicial: initialPwd,
-  }, 'Cuenta de acceso creada. Contraseña inicial = cédula');
+  }, 'Cuenta de acceso creada exitosamente.');
 });
 
 // ─── CARGA MASIVA CSV ─────────────────────────────────────────────────────────
@@ -188,4 +235,16 @@ const getOpenVisit = asyncHandler(async (req, res) => {
   return ok(res, { visit, vehicleLog }, 'Ingreso abierto encontrado');
 });
 
-module.exports = { list, getOne, create, updateFaceId, update, createAccount, bulkImport, getOpenVisit };
+// ─── ELIMINAR RESIDENTE ───────────────────────────────────────────────────────
+const removeResident = asyncHandler(async (req, res) => {
+  const resident = await Resident.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+  if (!resident) return error(res, 'Residente no encontrado', 404);
+  
+  if (resident.user_id) {
+    await User.findByIdAndDelete(resident.user_id);
+  }
+  await Resident.findByIdAndDelete(req.params.id);
+  return ok(res, {}, 'Residente eliminado exitosamente');
+});
+
+module.exports = { list, getOne, create, updateFaceId, update, createAccount, bulkImport, getOpenVisit, remove: removeResident };

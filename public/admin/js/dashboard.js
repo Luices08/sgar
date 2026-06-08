@@ -5,13 +5,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const tenant = SGAR.getTenant();
 
-  if (user.rol === 'adminControl') {
+  const imp = localStorage.getItem('sgar_impersonate_tenant');
+
+  if (user.rol === 'adminControl' && !imp) {
     document.getElementById('page-title').textContent    = 'Conjuntos Residenciales';
     document.getElementById('page-subtitle').textContent = 'Todos los conjuntos del sistema';
     document.getElementById('btn-nuevo').style.display   = 'inline-flex';
     document.getElementById('btn-nuevo-label').textContent = 'Nuevo conjunto';
     document.getElementById('view-admincontrol').style.display = 'block';
     SGAR.initDrawer('drawer-tenant');
+    SGAR.initDrawer('drawer-admin');
     loadTenants();
     document.getElementById('btn-nuevo').addEventListener('click', () => openNewTenant());
     document.getElementById('form-tenant').addEventListener('submit', submitTenant);
@@ -61,7 +64,9 @@ async function loadTenants() {
         </div>
       </div>
       <div class="tenant-card-actions">
+        <button class="btn-primary btn-sm" onclick="enterTenant(${JSON.stringify(t).replace(/"/g,'&quot;')})">Ver</button>
         <button class="btn-secondary btn-sm" onclick="editTenant('${t._id}', ${JSON.stringify(t).replace(/"/g,'&quot;')})">Editar</button>
+        <button class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f;" onclick="deleteTenant('${t._id}', '${t.nombre}')">Eliminar</button>
       </div>
       <div class="tenant-card-accent-bar" style="background:${t.colorAcento}"></div>
     </div>
@@ -73,7 +78,9 @@ function openNewTenant() {
   document.getElementById('drawer-title').textContent = 'Nuevo Conjunto';
   document.getElementById('form-tenant').reset();
   SGAR.clearFormError('form-error');
-  document.getElementById('f-admin-email').closest('.form-field').style.display = '';
+  document.getElementById('admin-fields').style.display = 'block';
+  document.getElementById('admin-crud-section').style.display = 'none';
+  document.getElementById('field-estado').style.display = 'none';
   SGAR.openDrawer('drawer-tenant');
 }
 
@@ -85,8 +92,12 @@ function editTenant(id, t) {
   document.getElementById('f-descripcion').value    = t.descripcion || '';
   document.getElementById('f-color').value          = t.colorAcento || '#1a1a2e';
   document.getElementById('f-color-text').value     = t.colorAcento || '#1a1a2e';
-  document.getElementById('f-admin-email').closest('.form-field').style.display = 'none';
+  document.getElementById('f-activo').value         = t.activo ? 'true' : 'false';
+  document.getElementById('admin-fields').style.display = 'none';
+  document.getElementById('admin-crud-section').style.display = 'block';
+  document.getElementById('field-estado').style.display = 'block';
   SGAR.clearFormError('form-error');
+  loadAdmins(id);
   SGAR.openDrawer('drawer-tenant');
 }
 
@@ -105,6 +116,9 @@ async function submitTenant(e) {
   formData.append('nombre',      document.getElementById('f-nombre').value.trim());
   formData.append('descripcion', document.getElementById('f-descripcion').value.trim());
   formData.append('colorAcento', document.getElementById('f-color-text').value.trim());
+  if (isEdit) {
+    formData.append('activo', document.getElementById('f-activo').value);
+  }
 
   const file = document.getElementById('f-imagen').files[0];
   if (file) formData.append('imagen_conjunto', file);
@@ -120,6 +134,123 @@ async function submitTenant(e) {
   }
   SGAR.closeDrawer('drawer-tenant');
   loadTenants();
+}
+
+async function deleteTenant(id, nombre) {
+  const pwd = prompt(`ELIMINAR CONJUNTO\n\nEstás a punto de eliminar el conjunto "${nombre}" y TODOS sus registros (usuarios, visitas, etc).\nEsta acción NO se puede deshacer.\n\nPara confirmar, ingresa TU contraseña de administrador:`);
+  if (!pwd) return;
+
+  const res = await SGAR.api(`/api/tenants/${id}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ password: pwd })
+  });
+
+  if (res && res.success) {
+    alert('Conjunto y todos sus vínculos eliminados correctamente.');
+    loadTenants();
+  } else {
+    alert(res?.message || 'Error al eliminar conjunto');
+  }
+}
+
+// ── ADMIN CRUD ─────────────────────────────────────────────────────────────
+async function loadAdmins(tenantId) {
+  const res = await SGAR.api(`/api/users?rol=adminConjunto&limit=10&tenant_id=${tenantId}`);
+  if (!res || !res.success) return;
+  const tbody = document.getElementById('admins-tbody');
+  const admins = res.data;
+  if (admins.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="table-loading">No hay administradores registrados.</td></tr>';
+  } else {
+    tbody.innerHTML = admins.map(a => `
+      <tr>
+        <td>${a.nombre}</td>
+        <td>${a.email}</td>
+        <td>${SGAR.activeBadge(a.activo)}</td>
+        <td>
+          <button type="button" class="btn-secondary btn-sm" onclick="editAdmin('${a._id}', ${JSON.stringify(a).replace(/"/g,'&quot;')})">Editar</button>
+          <button type="button" class="btn-secondary btn-sm" onclick="toggleAdmin('${a._id}', ${a.activo})">${a.activo ? 'Desactivar' : 'Activar'}</button>
+          <button type="button" class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f" onclick="deleteAdmin('${a._id}')">Eliminar</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+}
+
+window.toggleAdmin = async function(id, activo) {
+  if (!confirm(`¿${activo ? 'Desactivar' : 'Activar'} administrador?`)) return;
+  await SGAR.api(`/api/users/${id}/toggle`, { method: 'PATCH' });
+  loadAdmins(document.getElementById('tenant-edit-id').value);
+}
+
+window.deleteAdmin = async function(id) {
+  if (!confirm('¿Eliminar administrador? Esta acción no se puede deshacer.')) return;
+  await SGAR.api(`/api/users/${id}`, { method: 'DELETE' });
+  loadAdmins(document.getElementById('tenant-edit-id').value);
+}
+
+window.editAdmin = function(id, a) {
+  document.getElementById('admin-edit-id').value = id;
+  document.getElementById('a-nombre').value = a.nombre;
+  document.getElementById('a-email').value = a.email;
+  document.getElementById('a-pwd').value = '';
+  document.getElementById('a-pwd').required = false;
+  document.getElementById('admin-drawer-title').textContent = 'Editar Administrador';
+  SGAR.clearFormError('a-form-error');
+  SGAR.openDrawer('drawer-admin');
+  document.getElementById('drawer-admin-overlay').style.display = 'block';
+}
+
+document.getElementById('btn-add-admin')?.addEventListener('click', () => {
+  document.getElementById('admin-edit-id').value = '';
+  document.getElementById('form-admin').reset();
+  document.getElementById('a-pwd').required = true;
+  document.getElementById('admin-drawer-title').textContent = 'Nuevo Administrador';
+  SGAR.clearFormError('a-form-error');
+  SGAR.openDrawer('drawer-admin');
+  document.getElementById('drawer-admin-overlay').style.display = 'block';
+});
+
+document.getElementById('admin-drawer-close')?.addEventListener('click', () => {
+  SGAR.closeDrawer('drawer-admin');
+  document.getElementById('drawer-admin-overlay').style.display = 'none';
+});
+
+document.getElementById('form-admin')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('admin-edit-id').value;
+  const tenantId = document.getElementById('tenant-edit-id').value;
+  
+  const body = {
+    nombre: document.getElementById('a-nombre').value.trim(),
+    email: document.getElementById('a-email').value.trim(),
+    rol: 'adminConjunto',
+    tenant_id: tenantId
+  };
+  
+  const pwd = document.getElementById('a-pwd').value;
+  if (pwd) body.password = pwd;
+
+  SGAR.clearFormError('a-form-error');
+
+  if (id) {
+    const res = await SGAR.api(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+    if (!res || !res.success) { SGAR.showFormError('a-form-error', res?.message || 'Error al actualizar'); return; }
+    if (pwd) await SGAR.api(`/api/users/${id}/password`, { method: 'PATCH', body: JSON.stringify({ newPassword: pwd }) });
+  } else {
+    const res = await SGAR.api('/api/users', { method: 'POST', body: JSON.stringify(body) });
+    if (!res || !res.success) { SGAR.showFormError('a-form-error', res?.message || 'Error al crear'); return; }
+  }
+
+  SGAR.closeDrawer('drawer-admin');
+  document.getElementById('drawer-admin-overlay').style.display = 'none';
+  loadAdmins(tenantId);
+});
+
+function enterTenant(t) {
+  // Guardamos el tenant que vamos a impersonar
+  localStorage.setItem('sgar_impersonate_tenant', JSON.stringify(t));
+  window.location.reload();
 }
 
 function syncColorPicker() {
