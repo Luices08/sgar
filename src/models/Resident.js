@@ -65,6 +65,11 @@ const residentSchema = new mongoose.Schema({
     ref:     'User',
     default: null,
   },
+  // Relación N:M con Vehículos
+  vehiculos: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vehicle',
+  }],
 }, {
   timestamps: true,
 });

@@ -114,7 +114,7 @@ async function loadNotificaciones() {
     return;
   }
 
-  const iconMap = { visita: '👤', domicilio: '📦', vehiculo: '🚗', sistema: '🔔' };
+  const iconMap = { visita: '👤', domicilio: '📦', vehiculo: '🚗', sistema: '🔔', autorizacion_visita: '❓' };
 
   list.innerHTML = notifications.map(n => `
     <div class="notif-card ${n.leida ? '' : 'unread'}">
@@ -122,10 +122,36 @@ async function loadNotificaciones() {
       <div class="notif-body">
         <div class="notif-titulo">${escHtml(n.titulo)}</div>
         <div class="notif-msg">${escHtml(n.mensaje)}</div>
-        <div class="notif-time">${fmtDate(n.createdAt)}</div>
+        
+        ${n.tipo === 'autorizacion_visita' && n.estadoAprobacion === 'pendiente' ? `
+          <div style="margin-top: 10px; display:flex; gap:8px;">
+            <button class="btn-primary" style="flex:1; padding:8px; font-size:0.9rem; border-radius:4px;" onclick="responderAutorizacion('${n._id}', 'aprobado')">Aceptar</button>
+            <button class="btn-outline" style="flex:1; padding:8px; font-size:0.9rem; border-radius:4px; color:#ef4444; border-color:#ef4444;" onclick="responderAutorizacion('${n._id}', 'rechazado')">Rechazar</button>
+          </div>
+        ` : ''}
+
+        ${n.tipo === 'autorizacion_visita' && n.estadoAprobacion !== 'pendiente' ? `
+          <div style="margin-top: 5px; font-size:0.85rem; font-weight:bold; color: ${n.estadoAprobacion === 'aprobado' ? '#10b981' : '#ef4444'}">
+            Visita ${n.estadoAprobacion.toUpperCase()}
+          </div>
+        ` : ''}
+
+        <div class="notif-time" style="margin-top:5px;">${fmtDate(n.createdAt)}</div>
       </div>
     </div>
   `).join('');
+}
+
+window.responderAutorizacion = async function(id, status) {
+  const res = await apiCall(`/api/notifications/${id}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ status })
+  });
+  if (res?.success) {
+    await loadNotificaciones();
+  } else {
+    alert(res?.message || 'Error al procesar la respuesta');
+  }
 }
 
 async function markAllRead() {
@@ -183,20 +209,24 @@ async function loadInvitaciones() {
   list.innerHTML = invs.map(inv => `
     <div class="inv-card">
       <div class="inv-card-header">
-        <span class="inv-visitante">${escHtml(inv.nombreVisitante)}</span>
+        <div>
+          <span class="inv-visitante">${escHtml(inv.nombreVisitante)}</span>
+          ${inv.cedulaVisitante ? `<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Céd: ${escHtml(inv.cedulaVisitante)}</div>` : ''}
+        </div>
         <span class="inv-status ${inv.estado}">${inv.estado}</span>
       </div>
       <div class="inv-meta">
-        Apto ${inv.apartamento} · ${fmtDate(inv.fechaEsperada)}
+        ${inv.personasEsperadas > 1 ? `<span>&#128101; ${inv.personasEsperadas} personas</span> &middot; ` : ''}
+        Vence: ${fmtDate(inv.tiempo_caducidad)}
       </div>
       ${inv.estado === 'pendiente' ? `
         <div class="inv-codigo">
-          <span class="inv-codigo-label">Código</span>
+          <span class="inv-codigo-label">Código para el celador</span>
           <span class="inv-codigo-num">${inv.codigo}</span>
         </div>
         <div class="inv-actions">
-          <button class="btn-action-sm" onclick="showCodigoModal('${inv.codigo}', '${escHtml(inv.nombreVisitante)}')">
-            Ver código
+          <button class="btn-action-sm" onclick="copiarCodigo('${inv.codigo}')">
+            &#128203; Copiar código
           </button>
           <button class="btn-outline" onclick="cancelarInvitacion('${inv._id}')">
             Cancelar
@@ -210,14 +240,40 @@ async function loadInvitaciones() {
 function openFormInvitacion() {
   const html = `
     <div id="inv-error" class="form-error" style="display:none"></div>
+
     <div class="form-field">
       <label>Nombre del visitante *</label>
-      <input type="text" id="inv-nombre" placeholder="Nombre completo" autocomplete="off">
+      <input type="text" id="inv-nombre" placeholder="Ej: Juan Pérez" autocomplete="off">
     </div>
+
     <div class="form-field">
-      <label>Fecha y hora esperada *</label>
+      <label>Cédula del visitante</label>
+      <input type="text" id="inv-cedula" placeholder="Opcional" autocomplete="off" inputmode="numeric">
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label>Nº de personas *</label>
+        <input type="number" id="inv-personas" value="1" min="1" max="20">
+      </div>
+      <div class="form-field">
+        <label>Vigencia *</label>
+        <select id="inv-caducidad">
+          <option value="12h">12 Horas</option>
+          <option value="1d" selected>1 Día</option>
+          <option value="2d">2 Días</option>
+          <option value="3d">3 Días</option>
+          <option value="5d">5 Días</option>
+          <option value="7d">7 Días</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Fecha y hora de llegada <span style="font-weight:400; text-transform:none; color:var(--text-muted);">(Opcional)</span></label>
       <input type="datetime-local" id="inv-fecha">
     </div>
+
     <button class="btn-action" id="btn-crear-inv">Crear invitación</button>
   `;
 
@@ -227,28 +283,35 @@ function openFormInvitacion() {
   document.getElementById('drawer-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // Fecha mínima = ahora
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  document.getElementById('inv-fecha').min   = now.toISOString().slice(0, 16);
-  document.getElementById('inv-fecha').value = now.toISOString().slice(0, 16);
-
   document.getElementById('btn-crear-inv').addEventListener('click', crearInvitacion);
 }
 
 async function crearInvitacion() {
-  const nombre = document.getElementById('inv-nombre').value.trim();
-  const fecha  = document.getElementById('inv-fecha').value;
-  const errEl  = document.getElementById('inv-error');
+  const nombre   = document.getElementById('inv-nombre').value.trim();
+  const cedula   = document.getElementById('inv-cedula').value.trim();
+  const personas = document.getElementById('inv-personas').value;
+  const caducidad= document.getElementById('inv-caducidad').value;
+  const fecha    = document.getElementById('inv-fecha').value;
+  const errEl    = document.getElementById('inv-error');
 
   if (!nombre) { errEl.textContent = 'El nombre del visitante es requerido'; errEl.style.display = ''; return; }
-  if (!fecha)  { errEl.textContent = 'La fecha es requerida'; errEl.style.display = ''; return; }
 
   errEl.style.display = 'none';
 
+  const bodyData = {
+    nombreVisitante: nombre,
+    cedulaVisitante: cedula || undefined,
+    personasEsperadas: parseInt(personas) || 1,
+    tiempo_caducidad: caducidad,
+  };
+  
+  if (fecha) {
+    bodyData.fechaEsperada = new Date(fecha).toISOString();
+  }
+
   const res = await apiCall('/api/invitations', {
     method: 'POST',
-    body: JSON.stringify({ nombreVisitante: nombre, fechaEsperada: new Date(fecha).toISOString() }),
+    body: JSON.stringify(bodyData),
   });
 
   if (!res?.success) { errEl.textContent = res?.message || 'Error al crear'; errEl.style.display = ''; return; }
@@ -257,9 +320,25 @@ async function crearInvitacion() {
   await loadInvitaciones();
   switchTab('invitaciones');
 
-  // Mostrar código inmediatamente
+  // Mostrar y copiar código
   const inv = res.data.invitation;
-  showCodigoModal(inv.codigo, nombre);
+  copiarCodigo(inv.codigo);
+}
+
+async function copiarCodigo(codigo) {
+  try {
+    await navigator.clipboard.writeText(codigo);
+    alert('Código copiado al portapapeles: ' + codigo);
+  } catch (err) {
+    // Fallback
+    const input = document.createElement('input');
+    input.value = codigo;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    alert('Código copiado: ' + codigo);
+  }
 }
 
 async function cancelarInvitacion(id) {

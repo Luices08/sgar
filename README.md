@@ -9,60 +9,60 @@ Aplicación web multi-tenant académica que emula un modelo SaaS local para admi
 ```
 sgar/
 ├── src/
-│   ├── app.js                  # Entrada principal de Express
+│   ├── app.js                 
 │   ├── config/
-│   │   ├── database.js         # Conexión MongoDB
-│   │   ├── constants.js        # Constantes del sistema
-│   │   └── multer.js           # Configuración de uploads
+│   │   ├── database.js             
+│   │   ├── constants.js        # 
+│   │   └── multer.js           # 
 │   ├── middlewares/
-│   │   ├── auth.js             # [ZIP 2] Validación JWT
-│   │   ├── authorize.js        # [ZIP 2] Control por rol
-│   │   ├── tenantFilter.js     # [ZIP 2] Filtro tenant_id
+│   │   ├── auth.js             #  Validación JWT
+│   │   ├── authorize.js        #  Control por rol
+│   │   ├── tenantFilter.js     #   Filtro tenant_id
 │   │   └── errorHandler.js     # Manejo de errores
 │   ├── models/
-│   │   ├── Tenant.js           # [ZIP 3]
-│   │   ├── User.js             # [ZIP 3]
-│   │   ├── Resident.js         # [ZIP 3]
-│   │   ├── Visit.js            # [ZIP 3]
-│   │   ├── Vehicle.js          # [ZIP 3]
-│   │   ├── Notification.js     # [ZIP 3]
-│   │   └── Invitation.js       # [ZIP 3]
+│   │   ├── Tenant.js          
+│   │   ├── User.js             
+│   │   ├── Resident.js         
+│   │   ├── Visit.js            
+│   │   ├── Vehicle.js          
+│   │   ├── Notification.js     
+│   │   └── Invitation.js       
 │   ├── routes/
-│   │   ├── auth.js             # [ZIP 2]
-│   │   ├── tenants.js          # [ZIP 3]
-│   │   ├── users.js            # [ZIP 3]
-│   │   ├── residents.js        # [ZIP 3]
-│   │   ├── visits.js           # [ZIP 3]
-│   │   ├── vehicles.js         # [ZIP 3]
-│   │   ├── notifications.js    # [ZIP 3]
-│   │   ├── invitations.js      # [ZIP 3]
+│   │   ├── auth.js             
+│   │   ├── tenants.js         
+│   │   ├── users.js            
+│   │   ├── residents.js        
+│   │   ├── visits.js           
+│   │   ├── vehicles.js         
+│   │   ├── notifications.js    
+│   │   ├── invitations.js      
 │   │   └── views/
-│   │       ├── admin.js        # [ZIP 4]
-│   │       ├── porteria.js     # [ZIP 5]
-│   │       └── residente.js    # [ZIP 6]
-│   ├── controllers/            # [ZIP 2-6]
-│   ├── services/               # [ZIP 2-6]
+│   │       ├── admin.js       
+│   │       ├── porteria.js     
+│   │       └── residente.js   
+│   ├── controllers/            # 
+│   ├── services/               # 
 │   └── utils/
 │       ├── asyncHandler.js
 │       ├── response.js
 │       └── seed.js
 ├── views/
-│   ├── admin/                  # [ZIP 4] Plantillas EJS panel admin
-│   ├── porteria/               # [ZIP 5] Plantillas EJS portería
-│   ├── residente/              # [ZIP 6] Plantillas EJS residente
+│   ├── admin/                  #   Plantillas EJS panel admin
+│   ├── porteria/               # Plantillas EJS portería
+│   ├── residente/              # Plantillas EJS residente
 │   └── error.ejs               # Vista de error genérica
 ├── public/
 │   ├── admin/
-│   │   ├── css/                # [ZIP 4]
-│   │   └── js/                 # [ZIP 4]
+│   │   ├── css/            
+│   │   └── js/              
 │   ├── porteria/
-│   │   ├── css/                # [ZIP 5]
-│   │   └── js/                 # [ZIP 5] incluye sw.js y dexie
+│   │   ├── css/               
+│   │   └── js/                
 │   └── residente/
-│       ├── css/                # [ZIP 6]
-│       └── js/                 # [ZIP 6]
-├── uploads/                    # Generado automáticamente
-├── logs/                       # Generado automáticamente
+│       ├── css/             
+│       └── js/                
+├── uploads/                   
+├── logs/                       
 ├── .env.example
 ├── .gitignore
 ├── package.json
@@ -152,9 +152,9 @@ BASE_URL=https://tu-dominio-publico.com
 | 01  | Estructura base, Express, config       |
 | 02  | Autenticación JWT, middlewares         |
 | 03  | Modelos MongoDB, API REST completa     |
-| 04  | Panel Admin EJS (AdminControl + AdminConjunto) |
-| 05  | PWA Portería (Celador, Offline-First)  |
-| 06  | PWA Residente                          |
+| 04  | AdminControl + AdminConjunto |
+| 05  | Portería (Celador, Offline-First)  |
+| 06  | Residente                          |
 
 Todos los ZIPs comparten la misma raíz `sgar/`. Descomprimir en orden en la misma carpeta.
 

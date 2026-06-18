@@ -304,18 +304,23 @@ const registrarIngreso = asyncHandler(async (req, res) => {
     });
     vehicleInfo = vehicle;
 
-  } else if (vehiculoNuevo?.placa) {
-    const placaUp   = vehiculoNuevo.placa.toUpperCase().trim();
-    const existente = await Vehicle.findOne({ tenant_id: req.tenantId, placa: placaUp });
-
-    if (existente) {
-      return error(res, `La placa ${placaUp} ya está registrada. Verifique el propietario.`, 409);
+  } else if (vehiculoNuevo && (vehiculoNuevo.placa || vehiculoNuevo.tipo)) {
+    const placaUp   = vehiculoNuevo.placa ? vehiculoNuevo.placa.toUpperCase().trim() : '';
+    let existente = null;
+    
+    if (placaUp) {
+      existente = await Vehicle.findOne({ tenant_id: req.tenantId, placa: placaUp });
+      if (existente) {
+        return error(res, `La placa ${placaUp} ya está registrada. Verifique el propietario.`, 409);
+      }
     }
 
     const nuevoVehiculo = await Vehicle.create({
       tenant_id:            req.tenantId,
-      placa:                placaUp,
-      descripcion:          vehiculoNuevo.descripcion || null,
+      tipo:                 vehiculoNuevo.tipo || 'Otro',
+      placa:                placaUp || undefined,
+      marca:                vehiculoNuevo.marca || null,
+      modelo:               vehiculoNuevo.modelo || null,
       apartamento:          resident.apartamento,
       resident_id:          resident._id,
       registradoEnPorteria: true,
@@ -324,7 +329,7 @@ const registrarIngreso = asyncHandler(async (req, res) => {
     vehicleLog = await VehicleAccessLog.create({
       tenant_id:            req.tenantId,
       vehicle_id:           nuevoVehiculo._id,
-      placa:                nuevoVehiculo.placa,
+      placa:                nuevoVehiculo.placa || 'SIN PLACA',
       propietario_id:       resident._id,
       propietario_nombre:   resident.nombre,
       conductor_id:         resident._id,
@@ -344,8 +349,8 @@ const registrarIngreso = asyncHandler(async (req, res) => {
         user_id:     null,
         apartamento: resident.apartamento,
         tipo:        'vehiculo_nuevo',
-        titulo:      `Nuevo vehículo registrado en portería — ${nuevoVehiculo.placa}`,
-        mensaje:     `El celador ${req.user.nombre} registró el vehículo ${nuevoVehiculo.placa} a nombre de ${resident.nombre} (Apto ${resident.apartamento}).`,
+        titulo:      `Nuevo vehículo temporal registrado en portería`,
+        mensaje:     `El celador ${req.user.nombre} registró el vehículo ${nuevoVehiculo.placa || 'sin placa'} a nombre de ${resident.nombre} (Apto ${resident.apartamento}).`,
         visit_id:    visit._id,
       });
     } catch (_) {}

@@ -1,0 +1,133 @@
+<%- include('partials/head') %>
+</head>
+<body class="admin-layout">
+<%- include('partials/nav') %>
+<main class="main-content">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Vehículos</h1>
+      <p class="page-subtitle" id="sub-count">Cargando…</p>
+    </div>
+    <div class="header-actions">
+      <input type="search" id="search-input" class="search-input" placeholder="Buscar placa, apto, marca…">
+      <button class="btn-primary" id="btn-nuevo">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo vehículo
+      </button>
+    </div>
+  </header>
+
+  <div class="table-wrapper">
+    <table class="data-table" id="vehicles-table">
+      <thead>
+        <tr>
+          <th>Foto</th>
+          <th>Placa</th>
+          <th>Tipo</th>
+          <th>Marca y Modelo</th>
+          <th>Apartamento</th>
+          <th>Residente</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="vehicles-tbody">
+        <tr><td colspan="8" class="table-loading">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</main>
+
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer-vehicle">
+  <div class="drawer-header">
+    <h2 class="drawer-title" id="drawer-title">Nuevo Vehículo</h2>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body">
+    <form id="form-vehicle">
+      <input type="hidden" id="v-edit-id">
+      
+      <div class="form-row">
+        <div class="form-field">
+          <label>Tipo de Vehículo *</label>
+          <select id="v-tipo" required>
+            <option value="Carro">Carro</option>
+            <option value="Motocicleta">Motocicleta</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Placa <span id="label-placa-req">*</span></label>
+          <input type="text" id="v-placa" placeholder="AAA 000" style="text-transform: uppercase;">
+          <small id="placa-help" style="color: #666; font-size: 0.8rem;">Ej: AAA 000 para Carro</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Marca</label>
+          <input type="text" id="v-marca" placeholder="Ej. Toyota">
+        </div>
+        <div class="form-field">
+          <label>Modelo</label>
+          <input type="text" id="v-modelo" placeholder="Ej. Corolla">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Año</label>
+          <input type="number" id="v-anio" placeholder="2022" min="1900" max="2100">
+        </div>
+        <div class="form-field">
+          <label>Color</label>
+          <input type="text" id="v-color" placeholder="Gris">
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label>Apartamento *</label>
+        <input type="text" id="v-apartamento" placeholder="101" required>
+      </div>
+
+      <div class="form-field">
+        <label>Asignar Residente</label>
+        <select id="v-resident_id">
+          <option value="">(Sin asignar)</option>
+          <!-- Se llenará dinámicamente con los residentes del apartamento -->
+        </select>
+      </div>
+
+      <div class="form-field" id="field-v-estado" style="display:none">
+        <label>Estado del vehículo</label>
+        <select id="v-activo">
+          <option value="true">Activo</option>
+          <option value="false">Desactivado</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Foto del Vehículo</label>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+          <input type="file" id="v-foto-upload" accept="image/*" style="display:none">
+          <button type="button" class="btn-secondary btn-sm" onclick="document.getElementById('v-foto-upload').click()">Subir Imagen</button>
+          <span id="v-foto-name" style="font-size: 0.8rem; color: #666;">Sin archivo</span>
+        </div>
+        <div id="v-foto-preview-container" style="display:none; width: 100%; height: 150px; background: #eee; border-radius: 8px; overflow: hidden; align-items: center; justify-content: center;">
+          <img id="v-foto-preview" style="max-width: 100%; max-height: 100%; object-fit: cover;">
+        </div>
+        <input type="hidden" id="v-foto-base64">
+      </div>
+
+      <div id="v-form-error" class="form-error" style="display:none"></div>
+      <button type="submit" class="btn-primary btn-block" style="margin-bottom:10px;">Guardar Vehículo</button>
+    </form>
+  </div>
+</aside>
+
+<script src="/static/admin/js/admin-common.js"></script>
+<script src="/static/admin/js/vehiculos.js"></script>
+</body>
+</html>

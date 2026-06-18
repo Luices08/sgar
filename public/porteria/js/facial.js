@@ -250,8 +250,10 @@ const facialModule = (() => {
       showConfidence(res.data.facial?.confidence ?? null);
       showResidentModal(res.data.resident, res.data.facial?.confidence);
 
+      // Tarea 4: Apagar la cámara justo después de detectar un rostro exitosamente
+      stopCamera();
     } catch (err) {
-      console.error('[Facial] Error verificación:', err);
+      console.error('[Facial] verifyIdentity error:', err);
       setStatus('error', 'Error de conexión al verificar');
       showFacialToast('Error al verificar — revise conexión', true);
       setTimeout(() => { setStatus('scanning', 'Buscando rostro…'); startAutoDetect(); }, 2500);
@@ -326,39 +328,55 @@ const facialModule = (() => {
     const e = el();
     if (e.modeBtnPie)      e.modeBtnPie.classList.toggle('selected', mode === 'pie');
     if (e.modeBtnVehiculo) e.modeBtnVehiculo.classList.toggle('selected', mode === 'vehiculo');
-    if (e.confirmBtn)      e.confirmBtn.disabled = (mode === null);
+    
+    const inlineVehicleSection = document.getElementById('inline-vehicle-section');
+    if (inlineVehicleSection) {
+      if (mode === 'vehiculo') {
+        inlineVehicleSection.style.display = 'block';
+        if (STATE.actionType === 'salida' && STATE.openVehicleLogId) {
+           // We already know the vehicle from the entry
+           inlineVehicleSection.style.display = 'none';
+           if (e.confirmBtn) e.confirmBtn.disabled = false;
+        } else {
+           renderInlineVehicles();
+           if (e.confirmBtn) e.confirmBtn.disabled = !STATE.selectedVehicle;
+        }
+      } else {
+        inlineVehicleSection.style.display = 'none';
+        STATE.selectedVehicle = null;
+        if (e.confirmBtn) e.confirmBtn.disabled = (mode === null);
+      }
+    } else {
+       if (e.confirmBtn) e.confirmBtn.disabled = (mode === null);
+    }
   }
 
   /* ── Confirmar acción ───────────────────────────────────────────────────── */
   async function confirmAction() {
     if (!STATE.selectedMode || !STATE.currentResident) return;
-
-    if (STATE.selectedMode === 'vehiculo') {
-      if (STATE.actionType === 'salida' && STATE.openVehicleLogId) {
-        // Salida con vehículo ya conocido
-        await submitAction();
-      } else if (STATE.currentVehicles.length > 0) {
-        openVehicleDrawer();
-      } else {
-        showFacialToast('No hay vehículos vinculados a este residente', true);
-      }
-      return;
+    if (STATE.selectedMode === 'vehiculo' && !STATE.selectedVehicle && !(STATE.actionType === 'salida' && STATE.openVehicleLogId)) {
+       showFacialToast('Debes seleccionar un vehículo', true);
+       return;
     }
     await submitAction();
   }
 
-  /* ── Drawer de vehículos ────────────────────────────────────────────────── */
-  function openVehicleDrawer() {
+  /* ── Mostrar vehículos inline ───────────────────────────────────────────── */
+  function renderInlineVehicles() {
     const vList = document.getElementById('facial-vehicle-list');
     if (!vList) return;
-    STATE.selectedVehicle = null;
 
-    vList.innerHTML = STATE.currentVehicles.map(v => `
-      <div class="vehicle-item" data-id="${v._id}" onclick="facialModule._selectVehicle('${v._id}')">
-        <div class="vehicle-plate">${v.placa}</div>
-        <div class="vehicle-desc">
-          <div class="vehicle-desc-name">${v.descripcion || 'Sin descripción'}</div>
-          <div class="vehicle-desc-apto">Apto ${v.apartamento}</div>
+    let html = STATE.currentVehicles.map(v => {
+      const fotoHtml = v.foto ? `<img src="${v.foto}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:10px;">` : '<div style="width:40px;height:40px;background:#333;border-radius:4px;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888;">Sin foto</div>';
+      return `
+      <div class="vehicle-item ${STATE.selectedVehicle && STATE.selectedVehicle._id === v._id ? 'selected' : ''}" data-id="${v._id}" onclick="facialModule._selectVehicle('${v._id}')">
+        ${fotoHtml}
+        <div style="flex:1; text-align:left;">
+          <div class="vehicle-plate">${v.placa || 'Sin placa'}</div>
+          <div class="vehicle-desc">
+            <div class="vehicle-desc-name">${v.marca || ''} ${v.modelo || ''}</div>
+            <div class="vehicle-desc-apto">Apto ${v.apartamento}</div>
+          </div>
         </div>
         <div class="vehicle-check">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
@@ -366,23 +384,45 @@ const facialModule = (() => {
           </svg>
         </div>
       </div>
-    `).join('');
+      `
+    }).join('');
 
-    const vConfirm = document.getElementById('vehicle-drawer-confirm');
-    if (vConfirm) vConfirm.disabled = true;
+    // Opción "Otro vehículo temporal"
+    html += `
+      <div class="vehicle-item ${STATE.selectedVehicle && STATE.selectedVehicle._id === 'otro' ? 'selected' : ''}" data-id="otro" onclick="facialModule._selectVehicle('otro')" style="border: 1px dashed #555; background: transparent;">
+        <div style="width:40px;height:40px;background:#2a2a2a;border-radius:4px;margin-right:10px;display:flex;align-items:center;justify-content:center;color:#888;">+</div>
+        <div style="flex:1; text-align:left;">
+          <div class="vehicle-plate">Otro vehículo</div>
+          <div class="vehicle-desc">
+            <div class="vehicle-desc-name">Ingresar manualmente</div>
+          </div>
+        </div>
+        <div class="vehicle-check">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+      </div>
+    `;
 
-    const e = el();
-    if (e.vehicleDrawerOverlay) e.vehicleDrawerOverlay.classList.add('open');
-    if (e.vehicleDrawer)        e.vehicleDrawer.classList.add('open');
+    vList.innerHTML = html;
   }
 
   function _selectVehicle(vehicleId) {
-    STATE.selectedVehicle = STATE.currentVehicles.find(v => v._id === vehicleId) || null;
+    const e = el();
+    if (vehicleId === 'otro') {
+      STATE.selectedVehicle = { _id: 'otro' }; // Placeholder
+      document.getElementById('facial-vehicle-other-form').style.display = 'block';
+      if (e.confirmBtn) e.confirmBtn.disabled = false;
+    } else {
+      STATE.selectedVehicle = STATE.currentVehicles.find(v => v._id === vehicleId) || null;
+      document.getElementById('facial-vehicle-other-form').style.display = 'none';
+      if (e.confirmBtn) e.confirmBtn.disabled = false;
+    }
+
     document.querySelectorAll('.vehicle-item').forEach(item => {
       item.classList.toggle('selected', item.dataset.id === vehicleId);
     });
-    const vConfirm = document.getElementById('vehicle-drawer-confirm');
-    if (vConfirm) vConfirm.disabled = false;
   }
 
   function closeVehicleDrawer() {
@@ -404,8 +444,17 @@ const facialModule = (() => {
           descriptor: STATE._lastDescriptor,
           localId:    `local_${Date.now()}`,
         };
-        if (STATE.selectedMode === 'vehiculo' && STATE.selectedVehicle) {
-          body.vehicle_id = STATE.selectedVehicle._id;
+        if (STATE.selectedMode === 'vehiculo') {
+          if (STATE.selectedVehicle && STATE.selectedVehicle._id === 'otro') {
+            body.vehiculoNuevo = {
+              tipo: document.getElementById('v-otro-tipo').value,
+              placa: document.getElementById('v-otro-placa').value.trim().toUpperCase(),
+              marca: document.getElementById('v-otro-marca').value.trim(),
+              modelo: document.getElementById('v-otro-modelo').value.trim()
+            };
+          } else if (STATE.selectedVehicle) {
+            body.vehicle_id = STATE.selectedVehicle._id;
+          }
         }
         res = await porteriaAPI.request('/api/facial-access/ingreso', {
           method: 'POST',
@@ -423,10 +472,26 @@ const facialModule = (() => {
       }
 
       if (res?.success) {
+        // Tarea 3: Guardar el registro en Dexie para que aparezca en el historial
+        if (res.data?.visit) {
+          const vData = res.data.visit;
+          // Guardarlo en DB local y marcarlo sincronizado
+          const localId = vData.localId || dbVisitas.newLocalId();
+          const saved = await dbVisitas.save({
+            ...vData,
+            localId,
+            placa: STATE.selectedVehicle && STATE.selectedVehicle._id === 'otro' 
+                     ? document.getElementById('v-otro-placa').value.trim().toUpperCase()
+                     : (STATE.selectedVehicle?.placa || vData.placa || undefined),
+            movimiento: STATE.actionType // 'ingreso' o 'salida'
+          });
+          await dbVisitas.markSynced(saved.id);
+        }
+
         closeModal();
         closeVehicleDrawer();
         const modoLabel = STATE.selectedMode === 'vehiculo'
-          ? `en vehículo ${STATE.selectedVehicle?.placa || ''}`
+          ? `en vehículo ${STATE.selectedVehicle?.placa || 'temporal'}`
           : 'a pie';
         showFacialToast(`${STATE.actionType === 'ingreso' ? 'Ingreso' : 'Salida'} registrado — ${modoLabel} ✓`);
         if (typeof refreshRecientes === 'function') await refreshRecientes();
@@ -516,6 +581,17 @@ const facialModule = (() => {
           setStatus('error', 'No se detectó ningún rostro — acérquese más');
           setTimeout(() => { setStatus('scanning', 'Buscando rostro…'); startAutoDetect(); }, 2000);
         }
+      });
+    }
+
+    const btnManual = document.getElementById('btn-registro-manual');
+    if (btnManual) {
+      btnManual.addEventListener('click', () => {
+        closeFacialScreen();
+        // Here we could open a drawer for manual resident registration, or just prompt.
+        // As requested: "si no hay conexión el registro se hará de forma manual"
+        openFormVisita({ isResidentManual: true }); 
+        // We will adapt openFormVisita in porteria.js to handle manual resident entry if needed.
       });
     }
 

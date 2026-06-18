@@ -28,7 +28,7 @@ async function loadCeladores() {
       <td>${SGAR.fmtDate(u.ultimoAcceso)}</td>
       <td>${SGAR.activeBadge(u.activo)}</td>
       <td>
-        <button class="btn-secondary btn-sm" onclick="openEdit(${JSON.stringify(u).replace(/"/g,'&quot;')})">Editar</button>
+        <button class="btn-secondary btn-sm" onclick="editCelador('${u._id}', ${JSON.stringify(u).replace(/"/g,'&quot;')})">Editar</button>
         <button class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f; margin-left: 5px;" onclick="deleteCelador('${u._id}')">
           Eliminar
         </button>
@@ -39,60 +39,59 @@ async function loadCeladores() {
 
 function openNew() {
   document.getElementById('c-edit-id').value = '';
-  document.getElementById('drawer-title').textContent = 'Nuevo Celador';
   document.getElementById('form-celador').reset();
   document.getElementById('c-pwd').required = true;
-  document.getElementById('c-pwd-label').textContent = 'Contraseña *';
-  document.getElementById('c-pwd-hint').style.display = 'none';
   document.getElementById('field-c-estado').style.display = 'none';
+  document.getElementById('drawer-title').textContent = 'Nuevo Celador';
   SGAR.clearFormError('c-form-error');
   SGAR.openDrawer('drawer-celador');
 }
 
-function openEdit(c) {
-  document.getElementById('c-edit-id').value = c._id;
-  document.getElementById('drawer-title').textContent = 'Editar Celador';
-  document.getElementById('c-nombre').value = c.nombre || '';
-  document.getElementById('c-email').value = c.email || '';
-  
-  const pwdInput = document.getElementById('c-pwd');
-  pwdInput.value = '';
-  pwdInput.required = false;
-  document.getElementById('c-pwd-label').textContent = 'Contraseña';
-  document.getElementById('c-pwd-hint').style.display = 'block';
-
+window.editCelador = function(id, c) {
+  document.getElementById('c-edit-id').value = id;
+  document.getElementById('c-nombre').value = c.nombre;
+  document.getElementById('c-email').value = c.email;
+  document.getElementById('c-pwd').value = '';
+  document.getElementById('c-pwd').required = false;
   document.getElementById('c-activo').value = c.activo ? 'true' : 'false';
   document.getElementById('field-c-estado').style.display = 'block';
-  
+  document.getElementById('drawer-title').textContent = 'Editar Celador';
   SGAR.clearFormError('c-form-error');
   SGAR.openDrawer('drawer-celador');
 }
 
 async function submitCelador(e) {
   e.preventDefault();
-  const editId = document.getElementById('c-edit-id').value;
+  const id = document.getElementById('c-edit-id').value;
   const body = {
     nombre:   document.getElementById('c-nombre').value.trim(),
     email:    document.getElementById('c-email').value.trim(),
     rol:      'celador',
   };
-  
   const pwd = document.getElementById('c-pwd').value;
-  if (pwd) {
-    body.password = pwd;
-  }
-  
-  if (editId) {
-    body.activo = document.getElementById('c-activo').value === 'true';
-  }
+  if (pwd) body.password = pwd;
 
   SGAR.clearFormError('c-form-error');
-  
-  const res = editId 
-    ? await SGAR.api(`/api/users/${editId}`, { method: 'PUT', body: JSON.stringify(body) })
-    : await SGAR.api('/api/users', { method: 'POST', body: JSON.stringify(body) });
+
+  if (id) {
+    const activo = document.getElementById('c-activo').value === 'true';
+    const res = await SGAR.api(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+    if (!res?.success) { SGAR.showFormError('c-form-error', res?.message || 'Error'); return; }
     
-  if (!res?.success) { SGAR.showFormError('c-form-error', res?.message || 'Error'); return; }
+    if (pwd) {
+      await SGAR.api(`/api/users/${id}/password`, { method: 'PATCH', body: JSON.stringify({ newPassword: pwd }) });
+    }
+    
+    const currentUser = await SGAR.api(`/api/users?rol=celador`);
+    const cUser = currentUser?.data?.find(u => u._id === id);
+    if (cUser && cUser.activo !== activo) {
+      await SGAR.api(`/api/users/${id}/toggle`, { method: 'PATCH' });
+    }
+  } else {
+    const res = await SGAR.api('/api/users', { method: 'POST', body: JSON.stringify(body) });
+    if (!res?.success) { SGAR.showFormError('c-form-error', res?.message || 'Error'); return; }
+  }
+
   SGAR.closeDrawer('drawer-celador');
   loadCeladores();
 }

@@ -14,6 +14,13 @@
   --danger: #e53e3e;
   --success: #38a169;
   --warning: #d97706;
+
+  /* Variantes de color basadas en --acento para mejor uso visual */
+  --acento-bg: color-mix(in srgb, var(--acento) 5%, white);
+  --acento-hover: color-mix(in srgb, var(--acento) 8%, white);
+  --acento-active: color-mix(in srgb, var(--acento) 12%, white);
+  --acento-muted: color-mix(in srgb, var(--acento) 90%, black);
+  --acento-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 }
 
 body {
@@ -22,6 +29,16 @@ body {
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Transición global suave para todos los elementos */
+* {
+  transition: background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease,
+              transform 0.2s ease;
 }
 
 /* ─── LAYOUT ─────────────────────────────────────────────────────────────────── */
@@ -47,10 +64,12 @@ body {
   gap: 10px;
   border-bottom: 1px solid var(--border);
 }
+
 .sidebar-brand-icon {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
 }
+
 .sidebar-brand-name {
   font-weight: 700;
   font-size: 16px;
@@ -142,12 +161,52 @@ body {
   color: #fff; border: none;
   border-radius: var(--radius);
   font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: opacity .15s;
+  cursor: pointer;
   text-decoration: none; white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--acento-shadow);
 }
-.btn-primary:hover   { opacity: .85; }
-.btn-primary:disabled{ opacity: .5; cursor: not-allowed; }
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px -1px rgb(0 0 0 / 0.1), 0 4px 5px -2px rgb(0 0 0 / 0.08);
+  background: var(--acento);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--acento-shadow);
+}
+.btn-primary:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--acento) 30%, white);
+}
 .btn-primary.btn-block { width: 100%; justify-content: center; margin-top: 8px; }
+
+/* Efecto ripple para botones primarios */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+.btn-primary:hover::after {
+  animation: ripple 0.6s ease-out;
+}
+@keyframes ripple {
+  0% { transform: scale(0, 0); opacity: 1; }
+  20% { transform: scale(25, 25); opacity: 1; }
+  100% { transform: scale(40, 40); opacity: 0; }
+}
 
 .btn-secondary {
   display: inline-flex; align-items: center; gap: 6px;
@@ -156,17 +215,58 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: background .15s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06);
 }
-.btn-secondary:hover   { background: #f5f5f5; }
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  background: var(--acento-bg);
+  color: var(--acento);
+  border-color: var(--acento);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+}
+.btn-secondary:active {
+  transform: translateY(0);
+  background: var(--acento-hover);
+}
+.btn-secondary:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+  background: #f9f9f9;
+  border-color: #e9e9e9;
+}
 .btn-secondary.btn-block { width: 100%; justify-content: center; margin-top: 8px; }
+
+/* Efecto ripple para botones secundarios */
+.btn-secondary::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+.btn-secondary:hover::after {
+  animation: ripple 0.6s ease-out;
+}
 
 .btn-sm {
   padding: 4px 10px;
   font-size: 12px; border-radius: 5px;
+  transition: all 0.2s ease;
 }
-.btn-danger { background: var(--danger); color: #fff; border: none; }
-.btn-danger:hover { opacity: .85; }
+.btn-sm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+}
 
 /* ─── CARDS GRID (tenants) ───────────────────────────────────────────────────── */
 .cards-grid {
@@ -182,9 +282,32 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: box-shadow .15s;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: var(--acento-shadow);
 }
-.tenant-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+.tenant-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 20px -5px rgb(0 0 0 / 0.08), 0 6px 12px -3px rgb(0 0 0 / 0.05);
+  border-color: var(--acento);
+}
+.tenant-card:active {
+  transform: translateY(0) scale(1);
+}
+.tenant-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--acento), transparent);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+.tenant-card:hover::before {
+  transform: scaleX(1);
+}
 
 .tenant-card-img {
   height: 100px;

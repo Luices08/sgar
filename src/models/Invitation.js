@@ -34,10 +34,23 @@ const invitationSchema = new mongoose.Schema({
     trim:     true,
     maxlength: 100,
   },
-  // Fecha y hora estimada de llegada
-  fechaEsperada: {
+  cedulaVisitante: {
+    type: String,
+    trim: true,
+  },
+  personasEsperadas: {
+    type: Number,
+    default: 1,
+  },
+  // Fecha y hora en que expira el código (12h, 1d, etc.)
+  tiempo_caducidad: {
     type:     Date,
     required: true,
+  },
+  // Fecha y hora en que se creó/esperaba (opcional si ya tenemos createdAt, pero lo dejamos por compatibilidad)
+  fechaEsperada: {
+    type:     Date,
+    default: Date.now,
   },
   // Código numérico de 6 dígitos para presentar en portería
   codigo: {

@@ -9,15 +9,50 @@ const vehicleSchema = new mongoose.Schema({
     required: true,
     index:    true,
   },
+  propietarios: [{
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'Resident',
+  }],
+  tipo: {
+    type:     String,
+    enum:     ['Carro', 'Motocicleta', 'Otro'],
+    required: true,
+  },
   placa: {
     type:      String,
-    required:  true,
     trim:      true,
     uppercase: true,
+    required: function() {
+      return this.tipo === 'Carro' || this.tipo === 'Motocicleta';
+    },
+    validate: {
+      validator: function(v) {
+        if (!v) return true;
+        if (this.tipo === 'Carro') return /^[A-Z]{3} \d{3}$/.test(v);
+        if (this.tipo === 'Motocicleta') return /^[A-Z]{3} \d{2}[A-Z]$/.test(v);
+        return true;
+      },
+      message: props => `${props.value} no es un formato de placa válido`
+    }
   },
-  descripcion: {
-    type:  String,
-    trim:  true,     // Ej: "Toyota Corolla gris"
+  marca: {
+    type: String,
+    trim: true,
+  },
+  modelo: {
+    type: String,
+    trim: true,
+  },
+  anio: {
+    type: Number,
+  },
+  color: {
+    type: String,
+    trim: true,
+  },
+  foto: {
+    type: String, // Base64 o URL
+    default: '',
   },
   apartamento: {
     type:     String,
@@ -25,17 +60,15 @@ const vehicleSchema = new mongoose.Schema({
     trim:     true,
     uppercase: true,
   },
-  resident_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'Resident',
-    default: null,
-  },
   activo: {
     type:    Boolean,
     default: true,
   },
-  // true si fue registrado por el celador en portería (no preregistrado por el AdminConjunto)
   registradoEnPorteria: {
+    type:    Boolean,
+    default: false,
+  },
+  esTemporal: {
     type:    Boolean,
     default: false,
   },

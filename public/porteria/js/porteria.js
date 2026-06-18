@@ -46,14 +46,37 @@ async function initApp() {
   const emps = await dbConfig.get('deliveryEmpresas');
   if (emps) deliveryEmpresas = emps;
 
-  // Eventos de la pantalla principal
-  document.getElementById('btn-visita').addEventListener('click',   () => openFormVisita());
-  document.getElementById('btn-domicilio').addEventListener('click', () => openFormDomicilio());
-  document.getElementById('btn-placa').addEventListener('click',     () => openFormPlaca());
-  document.getElementById('btn-facial').addEventListener('click',    () => facialModule.openFacialScreen());
+  // Eventos de la pantalla principal (Acciones Online / Normal)
+  document.getElementById('btn-registro-residente').addEventListener('click', () => facialModule.openFacialScreen());
+  
+  const btnVisita = document.getElementById('btn-registro-visita');
+  if(btnVisita) btnVisita.addEventListener('click', () => { navigate('visitas'); loadPendientes(); });
+  
+  const btnDomicilio = document.getElementById('btn-registro-domicilio');
+  if(btnDomicilio) btnDomicilio.addEventListener('click', () => openFormDomicilio());
+
+  // Eventos de modo Offline/Manual
+  const btnManualRes = document.getElementById('btn-manual-residente');
+  if(btnManualRes) btnManualRes.addEventListener('click', () => openFormVisita({ isResidentManual: true }));
+
+  const btnManualVis = document.getElementById('btn-manual-visita');
+  if(btnManualVis) btnManualVis.addEventListener('click', () => openFormVisita());
+
+  const btnManualDom = document.getElementById('btn-manual-domicilio');
+  if(btnManualDom) btnManualDom.addEventListener('click', () => openFormDomicilio());
+
+  // Historial y otros
   document.getElementById('btn-ver-historial').addEventListener('click', () => navigate('historial'));
   document.getElementById('btn-back-historial').addEventListener('click', () => navigate('main'));
   document.getElementById('btn-back-analiticas').addEventListener('click', () => navigate('main'));
+  document.getElementById('btn-back-visitas')?.addEventListener('click', () => navigate('main'));
+  
+  // Eventos de la nueva pantalla de visitas
+  document.getElementById('btn-manual-visita-online')?.addEventListener('click', () => openSearchResidentForVisit());
+  document.getElementById('btn-verificar')?.addEventListener('click', verificarCodigoCentro);
+  document.getElementById('search-invitations')?.addEventListener('input', filtrarTarjetas);
+  document.getElementById('btn-refresh-invitations')?.addEventListener('click', loadPendientes);
+
   document.getElementById('btn-sync').addEventListener('click', doSync);
   document.getElementById('btn-logout').addEventListener('click', doLogout);
 
@@ -89,6 +112,7 @@ function navigate(screen) {
   closeMenu();
 
   if (screen === 'historial') loadHistorial();
+  if (screen === 'visitas') loadPendientes();
   if (screen === 'facial') {} // Manejado por facialModule
 }
 
@@ -116,17 +140,20 @@ function closeDrawer() {
   document.body.style.overflow = '';
 }
 
-/* ─── FORMULARIO VISITA ──────────────────────────────────────────────────────── */
+/* ─── FORMULARIO VISITA / RESIDENTE MANUAL ───────────────────────────────────── */
 function openFormVisita(editData = null) {
+  const isResident = editData && editData.isResidentManual;
+  const isEdit = editData && !editData.isResidentManual && editData.id;
+
   const html = `
     <div id="f-error" class="form-error" style="display:none"></div>
     <div class="form-field">
-      <label>Nombre del visitante</label>
+      <label>${isResident ? 'Nombre del Residente' : 'Nombre del visitante'}</label>
       <input type="text" id="f-nombre" placeholder="Nombre completo" value="${editData?.nombre || ''}" autocomplete="off">
     </div>
     <div class="form-row">
       <div class="form-field">
-        <label>Cédula</label>
+        <label>Cédula ${isResident ? '*' : ''}</label>
         <input type="text" id="f-cedula" placeholder="1234567890" value="${editData?.cedula || ''}" inputmode="numeric">
       </div>
       <div class="form-field">
@@ -134,6 +161,7 @@ function openFormVisita(editData = null) {
         <input type="text" id="f-apto" placeholder="101" value="${editData?.apartamento || ''}" autocomplete="off" required>
       </div>
     </div>
+    ${!isResident ? `
     <div class="form-field">
       <label>Código de invitación</label>
       <div style="display:flex;gap:8px">
@@ -142,14 +170,18 @@ function openFormVisita(editData = null) {
       </div>
     </div>
     <div id="inv-info" style="display:none" class="form-ocr-bar found"></div>
+    ` : ''}
     <input type="hidden" id="f-inv-id">
-    <button class="btn-action" id="btn-submit-visita">${editData ? 'Actualizar' : 'Registrar visita'}</button>
+    <input type="hidden" id="f-is-resident" value="${isResident ? 'true' : 'false'}">
+    <button class="btn-action" id="btn-submit-visita">${isEdit ? 'Actualizar' : (isResident ? 'Registrar acceso manual' : 'Registrar visita')}</button>
   `;
 
-  openDrawer('Registrar Visita', html);
+  openDrawer(isResident ? 'Registro Manual de Residente' : 'Registrar Visita', html);
 
-  document.getElementById('btn-submit-visita').addEventListener('click', () => submitVisita(editData?.id));
-  document.getElementById('btn-validate-code').addEventListener('click', validateCode);
+  document.getElementById('btn-submit-visita').addEventListener('click', () => submitVisita(isEdit ? editData.id : null));
+  if (!isResident) {
+    document.getElementById('btn-validate-code').addEventListener('click', validateCode);
+  }
 }
 
 async function validateCode() {
@@ -176,10 +208,13 @@ async function submitVisita(editLocalId = null) {
   const user   = JSON.parse(localStorage.getItem('sgar_user') || '{}');
   const tenant = await dbConfig.get('tenant');
 
+  const isResident = document.getElementById('f-is-resident').value === 'true';
+
   if (!apto) { document.getElementById('f-error').textContent = 'El apartamento es requerido'; document.getElementById('f-error').style.display = ''; return; }
+  if (isResident && !cedula) { document.getElementById('f-error').textContent = 'La cédula es requerida para el registro manual'; document.getElementById('f-error').style.display = ''; return; }
 
   // Si tiene invitación, completarla en servidor
-  if (invId && navigator.onLine) {
+  if (invId && navigator.onLine && !isResident) {
     const res = await porteriaAPI.completarInvitacion(invId);
     if (res?.success) {
       closeDrawer();
@@ -190,7 +225,7 @@ async function submitVisita(editLocalId = null) {
   }
 
   const visitData = {
-    tipo:         'visita',
+    tipo:         isResident ? 'residente' : 'visita',
     nombre,
     cedula,
     apartamento:  apto,
@@ -198,8 +233,9 @@ async function submitVisita(editLocalId = null) {
     celador_nombre: user.nombre,
     tenant_id:    tenant?._id || user.tenant_id,
     horaIngreso:  new Date().toISOString(),
-    metodoIdentificacion: invId ? 'codigo_invitacion' : 'manual',
+    metodoIdentificacion: isResident ? 'manual' : (invId ? 'codigo_invitacion' : 'manual'),
     invitation_id: invId || null,
+    movimiento:   'ingreso',
   };
 
   const res = await porteriaAPI.registrarVisita(visitData);
@@ -207,7 +243,10 @@ async function submitVisita(editLocalId = null) {
     closeDrawer();
     await refreshRecientes();
     await updateSyncBanner();
-    showToast(res.local ? 'Visita guardada offline ↯' : 'Visita registrada ✓');
+    showToast(res.local ? 'Registro guardado offline ↯' : 'Registro exitoso ✓');
+  } else {
+    document.getElementById('f-error').textContent = res.message || 'Error al registrar';
+    document.getElementById('f-error').style.display = '';
   }
 }
 
@@ -258,6 +297,7 @@ async function submitDomicilio() {
     tenant_id:    tenant?._id || user.tenant_id,
     horaIngreso:  new Date().toISOString(),
     metodoIdentificacion: 'manual',
+    movimiento:   'ingreso',
   };
 
   const res = await porteriaAPI.registrarVisita(visitData);
@@ -336,6 +376,7 @@ async function submitPlaca() {
     tenant_id:    tenant?._id || user.tenant_id,
     horaIngreso:  new Date().toISOString(),
     metodoIdentificacion: 'manual',
+    movimiento:   'ingreso',
   };
 
   const res = await porteriaAPI.registrarVisita(visitData);
@@ -361,8 +402,8 @@ async function refreshRecientes() {
     <div class="recent-item">
       <span class="ri-badge ${v.tipo}">${v.tipo}</span>
       <div class="ri-info">
-        <div class="ri-name">${v.nombre || v.empresa || v.placa || '—'}</div>
-        <div class="ri-meta">Apto ${v.apartamento} · ${fmtHora(v.horaIngreso)}</div>
+        <div class="ri-name">${v.nombre || v.empresa || '—'} ${v.placa ? `(Vehículo: ${v.placa})` : ''}</div>
+        <div class="ri-meta">Apto ${v.apartamento} · ${fmtHora(v.movimiento === 'salida' ? (v.horaSalida || v.horaIngreso) : v.horaIngreso)} · <b style="color:${v.movimiento === 'salida' ? '#e53e3e' : '#38a169'}">${(v.movimiento || 'ingreso').toUpperCase()}</b></div>
       </div>
       <div class="ri-actions">
         <button class="btn-edit" onclick="editarVisita(${v.id})" title="Editar">✎</button>
@@ -372,6 +413,295 @@ async function refreshRecientes() {
       </div>
     </div>
   `).join('');
+}
+
+/* ─── CENTRO DE CONTROL DE VISITAS ───────────────────────────────────────────── */
+let invitacionesActivas = [];
+
+async function loadPendientes() {
+  if (!navigator.onLine) {
+    document.getElementById('cards-container').innerHTML = '<p style="color:#e53e3e; padding: 20px;">Sin conexión. No se pueden cargar las invitaciones en espera.</p>';
+    return;
+  }
+  
+  const res = await porteriaAPI.request('/api/visits/pendientes');
+  if (res?.success) {
+    invitacionesActivas = res.data.invitaciones || [];
+    renderTarjetas('');
+  }
+}
+
+function renderTarjetas(filtro = '') {
+  const container = document.getElementById('cards-container');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  const termo = filtro.toLowerCase();
+  const filtradas = invitacionesActivas.filter(inv => 
+    (inv.apartamento || '').toLowerCase().includes(termo) || 
+    (inv.nombreVisitante || '').toLowerCase().includes(termo)
+  );
+
+  if (filtradas.length === 0) {
+    container.innerHTML = '<div class="empty-recent" style="padding:24px 0;">No hay invitaciones en espera</div>';
+    return;
+  }
+
+  filtradas.forEach(inv => {
+    const card = document.createElement('div');
+    card.className = 'history-item';
+    card.style.cursor = 'pointer';
+    card.style.borderLeftColor = 'var(--acento)';
+    card.style.marginBottom = '8px';
+    
+    const fechaCaducidad = new Date(inv.tiempo_caducidad);
+    const hh = fechaCaducidad.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const dd = fechaCaducidad.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
+    const fmtCaduca = isNaN(fechaCaducidad.getTime()) ? 'N/A' : `${dd} ${hh}`;
+
+    card.innerHTML = `
+      <div class="hi-info">
+        <div class="hi-name">${inv.nombreVisitante}</div>
+        <div class="hi-apto">Apto ${inv.apartamento} &middot; ${inv.personasEsperadas || 1} persona(s) &middot; Vence ${fmtCaduca}</div>
+      </div>
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:6px 12px; font-family:monospace; font-weight:700; font-size:16px; letter-spacing:4px; color:var(--text); flex-shrink:0;">${inv.codigo}</div>
+    `;
+    
+    card.addEventListener('click', () => {
+      const codigoInput = document.getElementById('codigo-input');
+      if(codigoInput) {
+        codigoInput.value = inv.codigo;
+        codigoInput.focus();
+        codigoInput.style.borderColor = 'var(--acento)';
+      }
+    });
+    
+    container.appendChild(card);
+  });
+}
+
+function filtrarTarjetas(e) {
+  renderTarjetas(e.target.value);
+}
+
+async function verificarCodigoCentro() {
+  const code = document.getElementById('codigo-input').value.trim();
+  if (code.length < 6) return alert('Por favor, ingrese un código válido de 6 dígitos.');
+  
+  if (!navigator.onLine) return alert('Se requiere conexión para verificar códigos.');
+
+  try {
+    const btn = document.getElementById('btn-verificar');
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+
+    // Llamar a verificar-codigo primero
+    const res = await porteriaAPI.request('/api/visits/verificar-codigo', {
+      method: 'POST',
+      body: JSON.stringify({ codigo: code })
+    });
+
+    if (!res.success) {
+      throw new Error(res.message);
+    }
+
+    const inv = res.data.invitation;
+    const html = `
+      <!-- Tarjeta resumen del visitante -->
+      <div style="background:var(--bg); border-radius:var(--radius); padding:16px; margin-bottom:16px;">
+        <div class="ri-badge visita" style="margin-bottom:10px; display:inline-block;">Invitación válida</div>
+        <div style="font-size:16px; font-weight:700; color:var(--text); margin-bottom:4px;">${inv.nombreVisitante}</div>
+        <div style="font-size:13px; color:var(--text-muted);">Apto <strong>${inv.apartamento}</strong></div>
+        <div style="margin-top:12px; display:flex; gap:16px;">
+          <div>
+            <div style="font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px;">Personas</div>
+            <div style="font-size:15px; font-weight:600;">${inv.personasEsperadas || 1}</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px;">Cédula</div>
+            <div style="font-size:15px; font-weight:600;">${inv.cedulaVisitante || '—'}</div>
+          </div>
+        </div>
+      </div>
+      <button id="btn-confirmar-ingreso-inv" class="btn-action">
+        Confirmar Ingreso
+      </button>
+    `;
+    
+    openDrawer('Confirmar Invitación', html);
+    
+    document.getElementById('btn-confirmar-ingreso-inv').addEventListener('click', async () => {
+      try {
+        document.getElementById('btn-confirmar-ingreso-inv').disabled = true;
+        document.getElementById('btn-confirmar-ingreso-inv').textContent = 'Registrando...';
+        
+        const regRes = await porteriaAPI.request('/api/visits/registrar-ingreso', {
+          method: 'POST',
+          body: JSON.stringify({ codigo: code })
+        });
+        
+        if (!regRes.success) throw new Error(regRes.message);
+        
+        const visit = regRes.data?.visit;
+        if (visit) {
+           visit.syncStatus = 'sincronizado';
+           visit.localId = visit._id;
+           await db.visitas.put(visit);
+        }
+
+        closeDrawer();
+        alert('Visita confirmada y registrada exitosamente.');
+        
+        // Remover de la lista activa localmente, recargar historial
+        invitacionesActivas = invitacionesActivas.filter(i => i.codigo !== code);
+        document.getElementById('codigo-input').value = '';
+        renderTarjetas(document.getElementById('search-invitations')?.value || '');
+        
+        // Si queremos regresar y actualizar recientes
+        navigate('main');
+        refreshRecientes();
+      } catch(err) {
+        alert(err.message || 'Error al registrar.');
+      } finally {
+        document.getElementById('btn-confirmar-ingreso-inv').disabled = false;
+        document.getElementById('btn-confirmar-ingreso-inv').textContent = 'Confirmar Ingreso';
+      }
+    });
+
+  } catch (err) {
+    alert(err.message || 'Error al procesar. Verifique código o caducidad.');
+  } finally {
+    const btn = document.getElementById('btn-verificar');
+    btn.disabled = false;
+    btn.textContent = 'Verificar e Ingresar';
+  }
+}
+
+/* ─── VISITA NO ESPERADA (AUTORIZACIÓN) ──────────────────────────────────────── */
+function openSearchResidentForVisit() {
+  const html = `
+    <div style="padding: 10px;">
+      <p style="margin-bottom:10px; font-size:1rem;">Busca el residente al que se dirige la visita:</p>
+      <input type="text" id="sr-input" class="search-input" placeholder="Nombre o Cédula" style="width:100%; margin-bottom:15px; font-size:1.1rem;">
+      <div id="sr-results" style="max-height: 250px; overflow-y: auto;"></div>
+    </div>
+  `;
+  openDrawer('Buscar Residente', html);
+
+  // Actualizar datos de residentes en background
+  if (navigator.onLine) {
+    porteriaAPI.request('/api/residents?limit=1000').then(res => {
+      if (res && res.success) dbResidentes.cargarDesdeServidor(res.data);
+    }).catch(console.warn);
+  }
+
+  const srInput = document.getElementById('sr-input');
+  srInput.addEventListener('input', async (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    const resultsContainer = document.getElementById('sr-results');
+    if (q.length < 2) {
+      resultsContainer.innerHTML = '';
+      return;
+    }
+    const allRes = await db.residentes.toArray();
+    const matches = allRes.filter(r => 
+      (r.nombre||'').toLowerCase().includes(q) || 
+      (r.cedula||'').toLowerCase().includes(q)
+    ).slice(0, 10);
+
+    if (matches.length === 0) {
+      resultsContainer.innerHTML = '<p style="color:#666;">No se encontraron residentes.</p>';
+      return;
+    }
+
+    resultsContainer.innerHTML = matches.map(r => `
+      <div style="padding: 12px; border: 1px solid #e5e7eb; margin-bottom: 8px; border-radius: 6px; cursor:pointer; background:#f9fafb;" onclick="selectResidentForAuth('${r._id}')">
+        <strong style="color:#111827;">${r.nombre}</strong><br>
+        <span style="color:#4b5563; font-size:0.9rem;">Cédula: ${r.cedula || 'N/A'} | Apto: ${r.apartamento}</span>
+      </div>
+    `).join('');
+  });
+}
+
+window.selectResidentForAuth = async function(id) {
+  const resident = await db.residentes.get(id);
+  const html = `
+    <div style="background:var(--bg); border-radius:var(--radius); padding:16px; margin-bottom:16px; display:flex; align-items:center; gap:14px;">
+      <div style="width:48px; height:48px; border-radius:50%; background:var(--acento); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; flex-shrink:0;">${resident.nombre.charAt(0).toUpperCase()}</div>
+      <div>
+        <div style="font-size:16px; font-weight:700; color:var(--text);">${resident.nombre}</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Apto ${resident.apartamento}</div>
+        ${resident.telefono ? `<div style="font-size:12px; color:var(--text-muted);">&#128222; ${resident.telefono}</div>` : '<div style="font-size:12px; color:var(--text-muted);">Sin teléfono registrado</div>'}
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Nombre del visitante <span style="font-weight:400; text-transform:none;">(Opcional)</span></label>
+      <input type="text" id="sr-visitor-name" placeholder="Ej: María García" autocomplete="off">
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+      ${resident.telefono ? `
+        <a href="tel:${resident.telefono}" class="btn-action" style="text-align:center; text-decoration:none; background:var(--success);">
+          &#128222; Llamar al Residente
+        </a>
+      ` : ''}
+
+      <button class="btn-action" onclick="enviarNotificacionAutorizacion('${resident.user_id}', '${resident.apartamento}')" style="background:var(--warning);">
+        &#128276; Notificar desde la App
+      </button>
+
+      <button class="btn-action-secondary" onclick="openFormVisita({ apartamento: '${resident.apartamento}' })">
+        Registrar visita manualmente
+      </button>
+    </div>
+
+    <div id="sr-auth-status" style="margin-top:20px; text-align:center;"></div>
+  `;
+  openDrawer('Autorizar Visita — Apto ' + resident.apartamento, html);
+}
+
+window.enviarNotificacionAutorizacion = async function(userId, apto) {
+  const visitorName = document.getElementById('sr-visitor-name').value.trim() || 'Alguien';
+  try {
+    const statusEl = document.getElementById('sr-auth-status');
+    statusEl.textContent = 'Enviando notificación...';
+
+    const res = await porteriaAPI.request('/api/notifications/request-auth', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, apartamento: apto, visitorName })
+    });
+
+    if (!res.success) throw new Error(res.message);
+    
+    statusEl.innerHTML = '<span style="color:#2563eb;">Notificación enviada. Esperando respuesta del residente...</span>';
+    
+    // Iniciar polling
+    const notifId = res.data.notification_id;
+    const pollInterval = setInterval(async () => {
+      // Si el drawer se cierra, dejamos de consultar
+      if (!document.getElementById('sr-auth-status')) {
+        clearInterval(pollInterval);
+        return;
+      }
+      
+      const st = await porteriaAPI.request(`/api/notifications/${notifId}/status`);
+      if (st.success) {
+         if (st.data.status === 'aprobado') {
+             statusEl.innerHTML = '<span style="color:#10b981; font-size:1.4rem;">¡VISITA APROBADA!</span>';
+             statusEl.innerHTML += `<br><button onclick="openFormVisita({ apartamento: '${apto}', nombre: '${visitorName}', isResidentManual: false })" class="btn-primary" style="margin-top:15px; width:100%;">Proceder a Registrar</button>`;
+             clearInterval(pollInterval);
+         } else if (st.data.status === 'rechazado') {
+             statusEl.innerHTML = '<span style="color:#ef4444; font-size:1.4rem;">VISITA RECHAZADA</span>';
+             clearInterval(pollInterval);
+         }
+      }
+    }, 3000);
+
+  } catch(e) {
+    alert(e.message || 'Error al enviar la notificación. ¿Hay conexión?');
+    document.getElementById('sr-auth-status').textContent = '';
+  }
 }
 
 /* ─── HISTORIAL ──────────────────────────────────────────────────────────────── */
@@ -386,11 +716,11 @@ async function loadHistorial() {
 
   listEl.innerHTML = turno.map(v => `
     <div class="history-item">
-      <span class="hi-time">${fmtHora(v.horaIngreso)}</span>
+      <span class="hi-time">${fmtHora(v.movimiento === 'salida' ? (v.horaSalida || v.horaIngreso) : v.horaIngreso)}</span>
       <div class="ri-badge ${v.tipo}" style="flex-shrink:0">${v.tipo}</div>
       <div class="hi-info">
-        <div class="hi-name">${v.nombre || v.empresa || v.placa || '—'}</div>
-        <div class="hi-apto">Apto ${v.apartamento}</div>
+        <div class="hi-name">${v.nombre || v.empresa || '—'} ${v.placa ? `(Vehículo: ${v.placa})` : ''}</div>
+        <div class="hi-apto">Apto ${v.apartamento} · <b style="color:${v.movimiento === 'salida' ? '#e53e3e' : '#38a169'}">${(v.movimiento || 'ingreso').toUpperCase()}</b></div>
       </div>
       ${v.syncStatus === 'pendiente'
         ? '<span class="hi-pending">↯ Pendiente</span>'

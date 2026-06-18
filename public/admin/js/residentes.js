@@ -17,15 +17,15 @@
  *   - face_recognition_model-*
  */
 
-let currentPage  = 1;
-let searchTimer  = null;
+let currentPage = 1;
+let searchTimer = null;
 let cameraStream = null;
 
 // Descriptor facial real (Float32Array de 128 dims) capturado con face-api.js
 let capturedDescriptor = null;
 
 // Estado de carga de modelos face-api.js
-let faceApiLoaded  = false;
+let faceApiLoaded = false;
 let faceApiLoading = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,7 +38,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('form-resident').addEventListener('submit', submitResident);
   document.getElementById('btn-create-account').addEventListener('click', createAccount);
   document.getElementById('btn-camera-start').addEventListener('click', startCamera);
-  document.getElementById('btn-camera-capture').addEventListener('click', captureFace);
   document.getElementById('btn-camera-retake').addEventListener('click', retakeFace);
   document.getElementById('drawer-close')?.addEventListener('click', stopCamera);
   document.getElementById('drawer-overlay')?.addEventListener('click', stopCamera);
@@ -92,8 +91,8 @@ async function loadFaceApiModels() {
 // LISTA DE RESIDENTES
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadResidents() {
-  const q    = document.getElementById('search-input')?.value.trim() || '';
-  const url  = `/api/residents?page=${currentPage}&limit=20${q ? '&q=' + encodeURIComponent(q) : ''}`;
+  const q = document.getElementById('search-input')?.value.trim() || '';
+  const url = `/api/residents?page=${currentPage}&limit=20${q ? '&q=' + encodeURIComponent(q) : ''}`;
   const data = await SGAR.api(url);
   if (!data || !data.success) return;
 
@@ -115,7 +114,7 @@ async function loadResidents() {
       <td>${r.telefono || '—'}</td>
       <td>${SGAR.activeBadge(r.activo)}</td>
       <td>
-        <button class="btn-secondary btn-sm" onclick="openEdit(${JSON.stringify(r).replace(/"/g,'&quot;')})">Editar</button>
+        <button class="btn-secondary btn-sm" onclick="openEdit(${JSON.stringify(r).replace(/"/g, '&quot;')})">Editar</button>
         <button class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f; margin-left: 5px;" onclick="deleteResident('${r._id}')">Eliminar</button>
       </td>
     </tr>
@@ -141,12 +140,21 @@ function openNew() {
 function openEdit(r) {
   document.getElementById('r-edit-id').value = r._id;
   document.getElementById('drawer-title').textContent = 'Editar Residente';
-  document.getElementById('r-nombre').value      = r.nombre      || '';
+  document.getElementById('r-nombre').value = r.nombre || '';
   document.getElementById('r-apartamento').value = r.apartamento || '';
-  document.getElementById('r-cedula').value      = r.cedula      || '';
-  document.getElementById('r-email').value       = r.email       || '';
-  document.getElementById('r-telefono').value    = r.telefono    || '';
+  document.getElementById('r-cedula').value = r.cedula || '';
+  document.getElementById('r-email').value = r.email || '';
+  document.getElementById('r-telefono').value = r.telefono || '';
   document.getElementById('btn-create-account').style.display = r.user_id ? 'none' : 'block';
+
+  const btnAssignVehicle = document.getElementById('btn-assign-vehicle');
+  if (btnAssignVehicle) {
+    btnAssignVehicle.style.display = 'block';
+    btnAssignVehicle.onclick = () => {
+      window.location.href = `/admin/vehiculos?apto=${encodeURIComponent(r.apartamento)}&residente=${r._id}`;
+    };
+  }
+
   document.getElementById('r-activo').value = r.activo ? 'true' : 'false';
   document.getElementById('field-r-estado').style.display = 'block';
   resetCameraCapture();
@@ -236,7 +244,7 @@ async function captureFace() {
 
     // Mostrar preview con el recuadro del rostro detectado sobre canvas
     const canvas = document.getElementById('r-camera-canvas');
-    canvas.width  = video.videoWidth;
+    canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0);
@@ -333,12 +341,12 @@ async function submitResident(e) {
   }
 
   const fd = new FormData();
-  fd.append('nombre',      document.getElementById('r-nombre').value.trim());
+  fd.append('nombre', document.getElementById('r-nombre').value.trim());
   fd.append('apartamento', document.getElementById('r-apartamento').value.trim());
-  fd.append('cedula',      document.getElementById('r-cedula').value.trim());
-  fd.append('email',       document.getElementById('r-email').value.trim());
-  fd.append('password',    document.getElementById('r-password')?.value || '');
-  fd.append('telefono',    document.getElementById('r-telefono').value.trim());
+  fd.append('cedula', document.getElementById('r-cedula').value.trim());
+  fd.append('email', document.getElementById('r-email').value.trim());
+  fd.append('password', document.getElementById('r-password')?.value || '');
+  fd.append('telefono', document.getElementById('r-telefono').value.trim());
   if (editId) {
     fd.append('activo', document.getElementById('r-activo').value);
   }
@@ -402,10 +410,10 @@ async function createAccount() {
   loadResidents();
 }
 
-async function deleteResident(editId) {
-  if (!editId) return;
+window.deleteResident = async function(id) {
+  if (!id) return;
   if (!confirm('¿Estás seguro de eliminar este residente? Esta acción no se puede deshacer.')) return;
-  const res = await SGAR.api(`/api/residents/${editId}`, { method: 'DELETE' });
+  const res = await SGAR.api(`/api/residents/${id}`, { method: 'DELETE' });
   if (!res || !res.success) {
     alert(res?.message || 'Error al eliminar');
     return;

@@ -258,4 +258,76 @@ async function _crearNotificacion(visit, tenantId) {
   }
 }
 
-module.exports = { list, getOne, create, syncBatch, registerExit, update, remove, analytics };
+// ─── VERIFICAR CÓDIGO DE INVITACIÓN ──────────────────────────────────────────
+const verificarCodigo = asyncHandler(async (req, res) => {
+  const { codigo } = req.body;
+  const Invitation = require('../models/Invitation');
+  const inv = await Invitation.findOne({ codigo, tenant_id: req.tenantId, estado: 'pendiente' });
+  
+  if (!inv) return error(res, 'Código inválido o ya utilizado', 404);
+  
+  if (inv.tiempo_caducidad < new Date()) {
+    inv.estado = 'archivada';
+    await inv.save();
+    return error(res, 'El código ha expirado', 400);
+  }
+  
+  return ok(res, { invitation: inv }, 'Código verificado exitosamente');
+});
+
+// ─── REGISTRAR INGRESO CON CÓDIGO ────────────────────────────────────────────
+const registrarIngreso = asyncHandler(async (req, res) => {
+  const { codigo } = req.body;
+  const Invitation = require('../models/Invitation');
+  
+  const inv = await Invitation.findOne({ codigo, tenant_id: req.tenantId, estado: 'pendiente' });
+  if (!inv) return error(res, 'Código inválido o ya utilizado', 404);
+  
+  if (inv.tiempo_caducidad < new Date()) {
+    inv.estado = 'archivada';
+    await inv.save();
+    return error(res, 'El código ha expirado', 400);
+  }
+
+  // Registrar la visita real
+  const visit = await Visit.create({
+    tenant_id: req.tenantId,
+    tipo: 'visita',
+    nombre: inv.nombreVisitante,
+    cedula: inv.cedulaVisitante,
+    apartamento: inv.apartamento,
+    horaIngreso: new Date(),
+    celador_id: req.user.user_id,
+    celador_nombre: req.user.nombre,
+    metodoIdentificacion: 'codigo_invitacion',
+    invitation_id: inv._id,
+    syncStatus: SYNC_STATUS.SINCRONIZADO,
+  });
+
+  // Marcar invitación como completada
+  inv.estado = 'completado';
+  inv.visit_id = visit._id;
+  inv.fechaResolucion = new Date();
+  await inv.save();
+
+  // Opcional: Notificar al residente que su visita ingresó
+  await _crearNotificacion(visit, req.tenantId);
+
+  return created(res, { visit, invitation: inv }, 'Ingreso registrado exitosamente');
+});
+
+// ─── OBTENER INVITACIONES PENDIENTES DEL CONJUNTO ────────────────────────────
+const getPendientes = asyncHandler(async (req, res) => {
+  const Invitation = require('../models/Invitation');
+  // Buscar todas las pendientes que no han expirado
+  const now = new Date();
+  const pendientes = await Invitation.find({
+    tenant_id: req.tenantId,
+    estado: 'pendiente',
+    tiempo_caducidad: { $gte: now }
+  }).sort({ tiempo_caducidad: 1 }).lean();
+
+  return ok(res, { invitaciones: pendientes });
+});
+
+module.exports = { list, getOne, create, syncBatch, registerExit, update, remove, analytics, verificarCodigo, registrarIngreso, getPendientes };

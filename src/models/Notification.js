@@ -31,8 +31,14 @@ const notificationSchema = new mongoose.Schema({
       'permiso_aprobado',    // Propietario dijo Sí → aviso al celador
       'permiso_rechazado',   // Propietario dijo No → aviso al celador
       'tecnico_mantenimiento',
+      'autorizacion_visita', // Celador pide permiso de ingreso a Residente
     ],
     default: 'sistema',
+  },
+  estadoAprobacion: {
+    type: String,
+    enum: ['pendiente', 'aprobado', 'rechazado'],
+    default: 'pendiente',
   },
   titulo: {
     type:     String,

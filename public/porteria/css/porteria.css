@@ -129,22 +129,51 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.action-grid .action-btn:last-child:nth-child(odd) {
+.action-grid .action-group:first-child {
   grid-column: 1 / -1;
 }
 
-.action-btn {
+.action-group {
+  display: flex;
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: 10px;
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.action-group:hover {
+  border-color: var(--acento);
+}
+
+.action-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
   padding: 22px 12px;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   font-size: 14px; font-weight: 600; color: var(--text);
   cursor: pointer; transition: all .15s;
   min-height: 110px;
 }
-.action-btn:active { transform: scale(.97); }
-.action-btn:hover  { border-color: var(--acento); }
+.action-btn:active { background: var(--bg); }
+
+.action-btn-offline {
+  width: 50px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all .15s;
+}
+.action-btn-offline:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+.action-btn-offline:active { background: #e0e0e0; }
 
 .btn-visita   svg { color: #38a169; }
 .btn-domicilio svg { color: #d97706; }

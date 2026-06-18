@@ -19,22 +19,40 @@ const generateCode = async () => {
 
 // ─── CREAR INVITACIÓN (desde PWA Residente) ───────────────────────────────────
 const create = asyncHandler(async (req, res) => {
-  const { nombreVisitante, fechaEsperada } = req.body;
-  if (!nombreVisitante || !fechaEsperada) {
-    return error(res, 'nombreVisitante y fechaEsperada son requeridos', 400);
+  const { nombreVisitante, fechaEsperada, cedulaVisitante, personasEsperadas, tiempo_caducidad } = req.body;
+  if (!nombreVisitante || !tiempo_caducidad) {
+    return error(res, 'nombreVisitante y tiempo_caducidad son requeridos', 400);
   }
 
   const resident = await Resident.findOne({ user_id: req.user.user_id, tenant_id: req.tenantId });
   if (!resident) return error(res, 'Residente no encontrado', 404);
 
   const codigo = await generateCode();
+  
+  // Calcular tiempo_caducidad real
+  let expDate = new Date();
+  if (typeof tiempo_caducidad === 'string') {
+    if (tiempo_caducidad === '12h') expDate.setHours(expDate.getHours() + 12);
+    else if (tiempo_caducidad === '1d') expDate.setDate(expDate.getDate() + 1);
+    else if (tiempo_caducidad === '2d') expDate.setDate(expDate.getDate() + 2);
+    else if (tiempo_caducidad === '3d') expDate.setDate(expDate.getDate() + 3);
+    else if (tiempo_caducidad === '5d') expDate.setDate(expDate.getDate() + 5);
+    else if (tiempo_caducidad === '7d') expDate.setDate(expDate.getDate() + 7);
+    else expDate = new Date(tiempo_caducidad); // En caso de que se pase una fecha ISO
+  } else {
+    expDate = new Date(tiempo_caducidad);
+  }
+
   const inv = await Invitation.create({
-    tenant_id:       req.tenantId,
-    resident_id:     resident._id,
-    user_id:         req.user.user_id,
-    apartamento:     resident.apartamento,
+    tenant_id:         req.tenantId,
+    resident_id:       resident._id,
+    user_id:           req.user.user_id,
+    apartamento:       resident.apartamento,
     nombreVisitante,
-    fechaEsperada:   new Date(fechaEsperada),
+    cedulaVisitante:   cedulaVisitante || undefined,
+    personasEsperadas: personasEsperadas || 1,
+    fechaEsperada:     fechaEsperada ? new Date(fechaEsperada) : new Date(),
+    tiempo_caducidad:  expDate,
     codigo,
   });
 

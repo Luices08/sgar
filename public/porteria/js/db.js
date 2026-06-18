@@ -7,17 +7,20 @@
 const db = new Dexie('sgar_porteria');
 
 db.version(1).stores({
-  // Registros de acceso — tabla principal
   visitas: '++id, localId, syncStatus, horaIngreso, tipo, apartamento, tenant_id',
-
-  // Configuración del celador/tenant (una sola fila)
   config: 'key',
-
-  // Placas registradas para el tenant (caché del servidor)
   vehiculos: 'placa, apartamento',
-
-  // Residentes conocidos (caché para búsqueda offline)
   residentes: '_id, apartamento, cedula, nombre, faceId',
+});
+
+// Fase 1: Nueva estructura de Vehículos, migración de llave primaria
+// Dexie requiere eliminar la tabla y volverla a crear para cambiar el Primary Key
+db.version(2).stores({
+  vehiculos: null // Eliminar tabla anterior con PK string (placa)
+});
+
+db.version(3).stores({
+  vehiculos: '_id, placa, apartamento, resident_id',
 });
 
 /* ─── CONFIG HELPERS ─────────────────────────────────────────────────────────── */
@@ -99,14 +102,19 @@ const dbVisitas = {
 /* ─── VEHÍCULOS HELPERS ──────────────────────────────────────────────────────── */
 const dbVehiculos = {
   async buscarPlaca(placa) {
-    return db.vehiculos.get(placa.toUpperCase());
+    if (!placa) return null;
+    return db.vehiculos.where('placa').equals(placa.toUpperCase()).first();
+  },
+  async buscarPorResidente(residentId) {
+    if (!residentId) return [];
+    return db.vehiculos.where('resident_id').equals(residentId).toArray();
   },
   async upsert(vehiculo) {
-    await db.vehiculos.put({ ...vehiculo, placa: vehiculo.placa.toUpperCase() });
+    await db.vehiculos.put({ ...vehiculo, placa: vehiculo.placa ? vehiculo.placa.toUpperCase() : undefined });
   },
   async cargarDesdeServidor(vehiculos) {
     await db.vehiculos.clear();
-    await db.vehiculos.bulkPut(vehiculos.map(v => ({ ...v, placa: v.placa.toUpperCase() })));
+    await db.vehiculos.bulkPut(vehiculos.map(v => ({ ...v, placa: v.placa ? v.placa.toUpperCase() : undefined })));
   },
 };
 

@@ -27,6 +27,10 @@ router.get('/residentes', auth,
   authorize(ROLES.ADMIN_CONTROL, ROLES.ADMIN_CONJUNTO),
   (req, res) => res.render('admin/residentes', viewData(req, 'Residentes', 'residentes')));
 
+router.get('/vehiculos', auth,
+  authorize(ROLES.ADMIN_CONTROL, ROLES.ADMIN_CONJUNTO),
+  (req, res) => res.render('admin/vehiculos', viewData(req, 'Vehículos', 'vehiculos')));
+
 router.get('/celadores', auth,
   authorize(ROLES.ADMIN_CONTROL, ROLES.ADMIN_CONJUNTO),
   (req, res) => res.render('admin/celadores', viewData(req, 'Celadores', 'celadores')));

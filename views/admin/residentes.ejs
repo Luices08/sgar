@@ -1,113 +1,137 @@
 <%- include('partials/head') %>
-</head>
-<body class="admin-layout">
-<%- include('partials/nav') %>
-<main class="main-content">
-  <header class="page-header">
-    <div>
-      <h1 class="page-title">Residentes</h1>
-      <p class="page-subtitle" id="sub-count">Cargando…</p>
-    </div>
-    <div class="header-actions">
-      <input type="search" id="search-input" class="search-input" placeholder="Buscar nombre, cédula, apto…">
-      <button class="btn-primary" id="btn-nuevo">
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Nuevo residente
-      </button>
-    </div>
-  </header>
+  </head>
 
-  <div class="table-wrapper">
-    <table class="data-table" id="residents-table">
-      <thead>
-        <tr>
-          <th>Nombre</th><th>Apartamento</th><th>Cédula</th>
-          <th>Email</th><th>Teléfono</th><th>Estado</th><th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="residents-tbody">
-        <tr><td colspan="7" class="table-loading">Cargando…</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="pagination" id="pagination"></div>
-</main>
-
-<div class="drawer-overlay" id="drawer-overlay"></div>
-<aside class="drawer" id="drawer-resident">
-  <div class="drawer-header">
-    <h2 class="drawer-title" id="drawer-title">Nuevo Residente</h2>
-    <button class="drawer-close" id="drawer-close">✕</button>
-  </div>
-  <div class="drawer-body">
-    <form id="form-resident">
-      <input type="hidden" id="r-edit-id">
-      <div class="form-field">
-        <label>Nombre completo *</label>
-        <input type="text" id="r-nombre" required>
-      </div>
-      <div class="form-row">
-        <div class="form-field">
-          <label>Apartamento *</label>
-          <input type="text" id="r-apartamento" placeholder="101" required>
-        </div>
-        <div class="form-field">
-          <label>Cédula</label>
-          <input type="text" id="r-cedula" placeholder="1234567890">
-        </div>
-      </div>
-      <div class="form-field">
-        <label>Email (Requerido para acceso al portal)</label>
-        <input type="email" id="r-email" placeholder="residente@ejemplo.com">
-      </div>
-      <div class="form-field" id="field-r-estado" style="display:none">
-        <label>Estado del residente</label>
-        <select id="r-activo">
-          <option value="true">Activo</option>
-          <option value="false">Desactivado</option>
-        </select>
-      </div>
-      <div class="form-field">
-        <label>Contraseña (Requerida para acceso al portal)</label>
-        <input type="password" id="r-password" placeholder="Mínimo 6 caracteres" minlength="6">
-        <small style="color: #666; font-size: 0.8rem; margin-top: 4px; display: block;">Si deja este campo vacío en una edición, la contraseña no cambiará.</small>
-      </div>
-      <div class="form-field">
-        <label>Teléfono</label>
-        <input type="text" id="r-telefono" placeholder="3001234567">
-      </div>
-      <div class="form-field">
-        <label>Reconocimiento facial *</label>
-        <div class="camera-capture" id="resident-camera">
-          <video id="r-camera-video" class="camera-video" autoplay playsinline muted></video>
-          <canvas id="r-camera-canvas" class="camera-canvas"></canvas>
-          <div id="r-camera-preview" class="camera-preview">
-            <span>Sin captura facial</span>
+  <body class="admin-layout">
+    <%- include('partials/nav') %>
+      <main class="main-content">
+        <header class="page-header">
+          <div>
+            <h1 class="page-title">Residentes</h1>
+            <p class="page-subtitle" id="sub-count">Cargando…</p>
           </div>
-          <div class="camera-actions">
-            <button type="button" class="btn-secondary btn-sm" id="btn-camera-start">Prender cámara</button>
-            <button type="button" class="btn-secondary btn-sm" id="btn-camera-capture" disabled>Capturar rostro</button>
-            <button type="button" class="btn-secondary btn-sm" id="btn-camera-retake" style="display:none">Tomar otra</button>
+          <div class="header-actions">
+            <input type="search" id="search-input" class="search-input" placeholder="Buscar nombre, cédula, apto…">
+            <button class="btn-primary" id="btn-nuevo">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Nuevo residente
+            </button>
           </div>
-          <small>
-            Se extraen los <strong>facial landmarks</strong> (128 puntos) directamente desde la cámara.
-            No se guarda ninguna foto. Requiere buena iluminación y el rostro centrado.
-          </small>
+        </header>
+
+        <div class="table-wrapper">
+          <table class="data-table" id="residents-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Apartamento</th>
+                <th>Cédula</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="residents-tbody">
+              <tr>
+                <td colspan="7" class="table-loading">Cargando…</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-      <div id="r-form-error" class="form-error" style="display:none"></div>
-      <button type="submit" class="btn-primary btn-block" style="margin-bottom:10px;">Guardar</button>
-      <button type="button" class="btn-secondary btn-block" id="btn-create-account" style="display:none">
-        Crear cuenta de acceso
-      </button>
-    </form>
-  </div>
-</aside>
+        <div class="pagination" id="pagination"></div>
+      </main>
 
-<%# face-api.js — librería de reconocimiento facial en el navegador %>
-<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+      <div class="drawer-overlay" id="drawer-overlay"></div>
+      <aside class="drawer" id="drawer-resident">
+        <div class="drawer-header">
+          <h2 class="drawer-title" id="drawer-title">Nuevo Residente</h2>
+          <button class="drawer-close" id="drawer-close">✕</button>
+        </div>
+        <div class="drawer-body">
+          <form id="form-resident">
+            <input type="hidden" id="r-edit-id">
+            <div class="form-field">
+              <label>Nombre completo *</label>
+              <input type="text" id="r-nombre" required>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label>Apartamento *</label>
+                <input type="text" id="r-apartamento" placeholder="101" required>
+              </div>
+              <div class="form-field">
+                <label>Cédula</label>
+                <input type="text" id="r-cedula" placeholder="1234567890">
+              </div>
+            </div>
+            <div class="form-field">
+              <label>Email (Requerido para acceso al portal)</label>
+              <input type="email" id="r-email" placeholder="residente@ejemplo.com">
+            </div>
+            <div class="form-field" id="field-r-estado" style="display:none">
+              <label>Estado del residente</label>
+              <select id="r-activo">
+                <option value="true">Activo</option>
+                <option value="false">Desactivado</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Contraseña (Requerida para acceso al portal)</label>
+              <input type="password" id="r-password" placeholder="Mínimo 6 caracteres" minlength="6">
+              <small style="color: #666; font-size: 0.8rem; margin-top: 4px; display: block;">Si deja este campo vacío
+                en una edición, la contraseña no cambiará.</small>
+            </div>
+            <div class="form-field">
+              <label>Teléfono</label>
+              <input type="text" id="r-telefono" placeholder="3001234567">
+            </div>
+            <div class="form-field">
+              <label>Reconocimiento facial *</label>
+              <div class="camera-capture" id="resident-camera">
+                <video id="r-camera-video" class="camera-video" autoplay playsinline muted></video>
+                <canvas id="r-camera-canvas" class="camera-canvas"></canvas>
+                <div id="r-camera-preview" class="camera-preview">
+                  <span>Sin captura facial</span>
+                </div>
+                <div class="camera-actions">
+                  <button type="button" class="btn-secondary btn-sm" id="btn-camera-start">Prender cámara</button>
+                  <button type="button" class="btn-secondary btn-sm" id="btn-camera-capture" disabled>Capturar
+                    rostro</button>
+                  <button type="button" class="btn-secondary btn-sm" id="btn-camera-retake" style="display:none">Tomar
+                    otra</button>
+                </div>
+                <small>
+                  Se extraen los <strong>facial landmarks</strong> (128 puntos) directamente desde la cámara.
+                  No se guarda ninguna foto. Requiere buena iluminación y el rostro centrado.
+                </small>
+              </div>
+            </div>
+            <div id="r-form-error" class="form-error" style="display:none"></div>
+            <button type="submit" class="btn-primary btn-block" style="margin-bottom:10px;">Guardar</button>
+            <button type="button" class="btn-secondary btn-block" id="btn-create-account" style="display:none; margin-bottom:10px;">
+              Crear cuenta de acceso
+            </button>
+            <button type="button" class="btn-secondary btn-block" id="btn-assign-vehicle" style="display:none;">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5" style="vertical-align: text-bottom; margin-right: 4px;">
+                <rect x="1" y="3" width="15" height="13" rx="2"/>
+                <path d="M16 8h4l3 3v5h-7V8z"/>
+                <circle cx="5.5" cy="18.5" r="2.5"/>
+                <circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+              Asignar Vehículo
+            </button>
+          </form>
+        </div>
+      </aside>
 
-<script src="/static/admin/js/admin-common.js"></script>
-<script src="/static/admin/js/residentes.js"></script>
-</body>
-</html>
+      <%# face-api.js — librería de reconocimiento facial en el navegador %>
+        <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+        <script src="/static/admin/js/admin-common.js"></script>
+        <script src="/static/admin/js/residentes.js?v=2"></script>
+  </body>
+
+  </html>
