@@ -40,7 +40,12 @@ async function loadCeladores() {
 function openNew() {
   document.getElementById('c-edit-id').value = '';
   document.getElementById('form-celador').reset();
-  document.getElementById('c-pwd').required = true;
+  const pwdEl = document.getElementById('c-pwd');
+  if (pwdEl) { pwdEl.value = ''; pwdEl.required = true; }
+  const pwdReq = document.getElementById('c-pwd-req');
+  if (pwdReq) pwdReq.style.display = 'inline';
+  const pwdHint = document.getElementById('c-pwd-hint');
+  if (pwdHint) pwdHint.style.display = 'none';
   document.getElementById('field-c-estado').style.display = 'none';
   document.getElementById('drawer-title').textContent = 'Nuevo Celador';
   SGAR.clearFormError('c-form-error');
@@ -51,8 +56,12 @@ window.editCelador = function(id, c) {
   document.getElementById('c-edit-id').value = id;
   document.getElementById('c-nombre').value = c.nombre;
   document.getElementById('c-email').value = c.email;
-  document.getElementById('c-pwd').value = '';
-  document.getElementById('c-pwd').required = false;
+  const pwdEl = document.getElementById('c-pwd');
+  if (pwdEl) { pwdEl.value = ''; pwdEl.required = false; }
+  const pwdReq = document.getElementById('c-pwd-req');
+  if (pwdReq) pwdReq.style.display = 'none';
+  const pwdHint = document.getElementById('c-pwd-hint');
+  if (pwdHint) pwdHint.style.display = 'block';
   document.getElementById('c-activo').value = c.activo ? 'true' : 'false';
   document.getElementById('field-c-estado').style.display = 'block';
   document.getElementById('drawer-title').textContent = 'Editar Celador';
@@ -63,12 +72,20 @@ window.editCelador = function(id, c) {
 async function submitCelador(e) {
   e.preventDefault();
   const id = document.getElementById('c-edit-id').value;
+  const nombre = document.getElementById('c-nombre').value.trim();
+  const email = document.getElementById('c-email').value.trim();
+  const pwd = document.getElementById('c-pwd')?.value || '';
+
+  if (!id && (!pwd || pwd.length < 6)) {
+    SGAR.showFormError('c-form-error', 'La contraseña es requerida (mínimo 6 caracteres)');
+    return;
+  }
+
   const body = {
-    nombre:   document.getElementById('c-nombre').value.trim(),
-    email:    document.getElementById('c-email').value.trim(),
-    rol:      'celador',
+    nombre,
+    email,
+    rol: 'celador',
   };
-  const pwd = document.getElementById('c-pwd').value;
   if (pwd) body.password = pwd;
 
   SGAR.clearFormError('c-form-error');
@@ -76,7 +93,7 @@ async function submitCelador(e) {
   if (id) {
     const activo = document.getElementById('c-activo').value === 'true';
     const res = await SGAR.api(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(body) });
-    if (!res?.success) { SGAR.showFormError('c-form-error', res?.message || 'Error'); return; }
+    if (!res?.success) { SGAR.showFormError('c-form-error', res?.message || 'Error al actualizar'); return; }
     
     if (pwd) {
       await SGAR.api(`/api/users/${id}/password`, { method: 'PATCH', body: JSON.stringify({ newPassword: pwd }) });
@@ -89,7 +106,7 @@ async function submitCelador(e) {
     }
   } else {
     const res = await SGAR.api('/api/users', { method: 'POST', body: JSON.stringify(body) });
-    if (!res?.success) { SGAR.showFormError('c-form-error', res?.message || 'Error'); return; }
+    if (!res?.success) { SGAR.showFormError('c-form-error', res?.message || 'Error al guardar celador'); return; }
   }
 
   SGAR.closeDrawer('drawer-celador');

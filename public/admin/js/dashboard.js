@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadTenants();
     document.getElementById('btn-nuevo').addEventListener('click', () => openNewTenant());
     document.getElementById('form-tenant').addEventListener('submit', submitTenant);
-    syncColorPicker();
   } else {
     const nombre = tenant ? tenant.nombre : 'Mi Conjunto';
     document.getElementById('page-title').textContent    = nombre;
@@ -90,8 +89,6 @@ function editTenant(id, t) {
   document.getElementById('f-tenant-id').value     = t.tenant_id || '';
   document.getElementById('f-nombre').value         = t.nombre    || '';
   document.getElementById('f-descripcion').value    = t.descripcion || '';
-  document.getElementById('f-color').value          = t.colorAcento || '#1a1a2e';
-  document.getElementById('f-color-text').value     = t.colorAcento || '#1a1a2e';
   document.getElementById('f-activo').value         = t.activo ? 'true' : 'false';
   document.getElementById('admin-fields').style.display = 'none';
   document.getElementById('admin-crud-section').style.display = 'block';
@@ -115,7 +112,7 @@ async function submitTenant(e) {
   }
   formData.append('nombre',      document.getElementById('f-nombre').value.trim());
   formData.append('descripcion', document.getElementById('f-descripcion').value.trim());
-  formData.append('colorAcento', document.getElementById('f-color-text').value.trim());
+  formData.append('colorAcento', '#2563eb');
   if (isEdit) {
     formData.append('activo', document.getElementById('f-activo').value);
   }
@@ -253,15 +250,7 @@ function enterTenant(t) {
   window.location.reload();
 }
 
-function syncColorPicker() {
-  const picker = document.getElementById('f-color');
-  const text   = document.getElementById('f-color-text');
-  if (!picker || !text) return;
-  picker.addEventListener('input', () => { text.value = picker.value; });
-  text.addEventListener('input',  () => {
-    if (/^#[0-9A-Fa-f]{6}$/.test(text.value)) picker.value = text.value;
-  });
-}
+
 
 /* ── ADMIN CONJUNTO: BITÁCORA ───────────────────────────────────────────────── */
 async function loadDashboardConjunto() {

@@ -24,7 +24,7 @@ const seed = async () => {
   const tenant = await Tenant.create({
     nombre:       'Conjunto Residencial Los Pinos',
     tenant_id:    'c_lospinos_001',
-    colorAcento:  '#2d6a4f',
+    colorAcento:  '#2563eb',
     imagenUrl:    '/uploads/default-conjunto.jpg',
     descripcion:  'Conjunto de demostración para desarrollo',
     activo:       true,

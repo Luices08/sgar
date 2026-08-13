@@ -101,7 +101,7 @@ const login = asyncHandler(async (req, res) => {
       tenant_id: user.tenant_id,
     },
     tenantConfig,
-    defaultColor: process.env.DEFAULT_ACCENT_COLOR || '#1a1a2e',
+    defaultColor: process.env.DEFAULT_ACCENT_COLOR || '#2563eb',
   }, 'Login exitoso');
 });
 

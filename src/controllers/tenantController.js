@@ -74,7 +74,7 @@ const create = asyncHandler(async (req, res) => {
       tenant_id,
       nombre,
       descripcion,
-      colorAcento: colorAcento || '#1a1a2e',
+      colorAcento: colorAcento || '#2563eb',
       imagenUrl,
       deliveryEmpresas: deliveryEmpresas || DEFAULT_DELIVERY_COMPANIES,
     });

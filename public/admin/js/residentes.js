@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('form-resident').addEventListener('submit', submitResident);
   document.getElementById('btn-create-account').addEventListener('click', createAccount);
   document.getElementById('btn-camera-start').addEventListener('click', startCamera);
+  document.getElementById('btn-camera-capture')?.addEventListener('click', captureFace);
   document.getElementById('btn-camera-retake').addEventListener('click', retakeFace);
   document.getElementById('drawer-close')?.addEventListener('click', stopCamera);
   document.getElementById('drawer-overlay')?.addEventListener('click', stopCamera);

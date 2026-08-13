@@ -25,7 +25,7 @@ const tenantSchema = new mongoose.Schema({
   },
   colorAcento: {
     type:    String,
-    default: '#1a1a2e',
+    default: '#2563eb',
     match:   /^#[0-9A-Fa-f]{6}$/,
   },
   imagenUrl: {

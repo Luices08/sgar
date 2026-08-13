@@ -572,6 +572,11 @@ const facialModule = (() => {
           return;
         }
         clearInterval(STATE.autoDetectTimer);
+        let retries = 0;
+        while (STATE.detecting && retries < 20) {
+          await new Promise(r => setTimeout(r, 50));
+          retries++;
+        }
         setStatus('scanning', 'Detectando rostro…');
         const descriptor = await detectFace();
         if (descriptor) {

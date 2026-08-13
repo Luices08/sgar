@@ -36,6 +36,7 @@ app.use('/static/porteria', express.static(path.join(__dirname, '..', 'public', 
 app.use('/static/residente', express.static(path.join(__dirname, '..', 'public', 'residente')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 app.use('/models', express.static(path.join(__dirname, '../public/models')));
+app.get('/sw.js', (req, res) => res.status(204).end());
 
 // ─── RUTAS ─────────────────────────────────────────────────────────────────────
 // Se registran en ZIP 2 (auth) y subsiguientes

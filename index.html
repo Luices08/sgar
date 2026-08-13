@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama Mundo del Trabajo - Azul Arial</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: white;
+            color: #003366; /* Azul oscuro para el texto principal */
+            margin: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .contenedor-principal {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px; /* Mayor espacio vertical entre bloques principales */
+        }
+
+        /* Estilo para los títulos y palabras de enlace */
+        h1, h2, h3, p {
+            margin: 0;
+            text-align: center;
+        }
+
+        h1 { font-size: 24px; font-weight: bold; }
+        h2 { font-size: 18px; font-weight: bold; }
+        h3 { font-size: 16px; font-weight: normal; }
+        p.enlace { font-size: 14px; font-style: italic; color: #0055aa; margin: -10px 0; } /* Azul más claro para enlaces */
+
+        /* Estilo para los bloques contenedores */
+        .bloque {
+            border: 2px solid #003366; /* Borde azul */
+            padding: 15px 20px;
+            background-color: #e6f0ff; /* Fondo azul muy claro */
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px; /* Mayor espacio vertical interno */
+        }
+
+        /* Estilos específicos para las ramas */
+        .rama-horizontal {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            gap: 20px;
+        }
+
+        .columna {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Mayor espacio vertical en columnas */
+        }
+
+        /* Contenedores de grupos con líneas */
+        .grupo-con-lineas {
+            position: relative;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Estilo básico de línea vertical (azul) */
+        .linea-vertical {
+            width: 2px;
+            background-color: #003366;
+            margin: 0 auto;
+        }
+
+        /* Líneas horizontales para ramas */
+        .grupo-con-lineas::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%; /* Ancho de la línea horizontal */
+            height: 2px;
+            background-color: #003366;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="contenedor-principal">
+        
+        <div class="bloque">
+            <h1>MUNDO DEL TRABAJO</h1>
+        </div>
+
+        <p class="enlace">se transforma a través de</p>
+
+        <div class="rama-horizontal">
+            <!-- Columna Izquierda: MODELOS TRADICIONALES/CLÁSICOS -->
+            <div class="columna">
+                <div class="bloque">
+                    <h2>MODELOS TRADICIONALES/CLÁSICOS</h2>
+                </div>
+                
+                <p class="enlace">se basan en la</p>
+
+                <div class="bloque">
+                    <h2>PROTECCIÓN LABORAL</h2>
+                </div>
+
+                <p class="enlace">garantiza mediante</p>
+
+                <div class="bloque">
+                    <h2>TRABAJO DECENTE</h2>
+                </div>
+
+                <p class="enlace">se fundamenta en</p>
+
+                <div class="bloque">
+                    <h2>DIGNIDAD HUMANA Y DERECHOS</h2>
+                </div>
+
+                <p class="enlace">constituye un</p>
+
+                <div class="bloque">
+                    <h2>DERECHO HUMANO FUNDAMENTAL</h2>
+                </div>
+
+                <p class="enlace">garantiza elementos como</p>
+
+                <div class="rama-horizontal">
+                    <div class="columna">
+                        <div class="bloque"><h3>SALARIO JUSTO</h3></div>
+                    </div>
+                    <div class="columna">
+                        <div class="bloque"><h3>ESTABILIDAD LABORAL</h3></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: NUEVAS DINÁMICAS Y CAMBIOS -->
+            <div class="columna">
+                <div class="bloque">
+                    <h2>NUEVAS DINÁMICAS Y CAMBIOS</h2>
+                </div>
+
+                <p class="enlace">se caracterizan por</p>
+
+                <div class="rama-horizontal">
+                    <div class="columna">
+                        <div class="bloque"><h3>DESREGULACIÓN Y FLEXIBILIDAD</h3></div>
+                    </div>
+                    <div class="columna">
+                        <div class="bloque"><h3>PRINCIPIOS DE LA OIT</h3></div>
+                    </div>
+                </div>
+
+                <p class="enlace">promueven la</p>
+
+                <div class="rama-horizontal">
+                    <div class="columna">
+                        <div class="bloque"><h3>LIBERTAD SINDICAL Y NEGOCIACIÓN COLECTIVA</h3></div>
+                    </div>
+                    <div class="columna">
+                        <div class="bloque"><h3>IGUALDAD Y TRABAJO SEGURO / NO INFANTIL</h3></div>
+                    </div>
+                </div>
+
+                <p class="enlace">fortalecen la / garantizan el</p>
+
+                <div class="rama-horizontal">
+                    <div class="columna">
+                        <div class="bloque"><h3>DEMOCRACIA Y VIDA COMUNITARIA</h3></div>
+                    </div>
+                    <div class="columna">
+                        <div class="bloque"><h3>DESARROLLO HUMANO Y SOCIAL</h3></div>
+                    </div>
+                </div>
+
+                <p class="enlace">genera fenómenos como</p>
+
+                <div class="rama-horizontal">
+                    <!-- Rama PRECARIZACIÓN -->
+                    <div class="columna">
+                        <div class="bloque"><h3>PRECARIZACIÓN</h3></div>
+                        <p class="enlace">consiste en la</p>
+                        <div class="bloque"><h3>PÉRDIDA DE DERECHOS Y SEGURIDAD</h3></div>
+                        <p class="enlace">impacta a la</p>
+                        <div class="bloque"><h3>SOCIEDAD Y ECONOMÍA</h3></div>
+                        <p class="enlace">provocando problemas como</p>
+                        <div class="bloque"><h3>POBREZA Y DESIGUALDAD SOCIAL</h3></div>
+                        <p class="enlace">se intensifica por</p>
+                        <div class="bloque"><h3>TERCERIZACIÓN</h3></div>
+                        <p class="enlace">se manifiesta mediante</p>
+                        <div class="rama-horizontal">
+                            <div class="columna"><div class="bloque"><h3>OUTSOURCING EXTERNO</h3></div></div>
+                            <div class="columna"><div class="bloque"><h3>SUBCONTRATACIÓN DE PERSONAL</h3></div></div>
+                        </div>
+                        <p class="enlace">desplaza riesgos hacia</p>
+                        <div class="bloque"><h3>TRABAJADORES Y PEQUEÑAS UNIDADES</h3></div>
+                    </div>
+                    
+                    <!-- Rama DESLABORALIZACIÓN -->
+                    <div class="columna">
+                        <div class="bloque"><h3>DESLABORALIZACIÓN</h3></div>
+                        <p class="enlace">consiste en la</p>
+                        <div class="bloque"><h3>CREACIÓN DE FICCIÓN JURÍDICA</h3></div>
+                        <p class="enlace">se implementa mediante</p>
+                        <div class="bloque"><h3>CONTRATOS CIVILES Y DE SERVICIOS</h3></div>
+                        <p class="enlace">oculta verdaderas</p>
+                        <div class="bloque"><h3>RELACIONES DE SUBORDINACIÓN</h3></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
