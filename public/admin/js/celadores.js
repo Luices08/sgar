@@ -17,13 +17,14 @@ async function loadCeladores() {
   document.getElementById('sub-count').textContent = `${data.pagination.total} celadores`;
 
   if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="table-loading">No hay celadores registrados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="table-loading">No hay celadores registrados</td></tr>';
     return;
   }
 
   tbody.innerHTML = users.map(u => `
     <tr>
       <td>${u.nombre}</td>
+      <td>${u.cedula || '—'}</td>
       <td>${u.email}</td>
       <td>${SGAR.fmtDate(u.ultimoAcceso)}</td>
       <td>${SGAR.activeBadge(u.activo)}</td>
@@ -46,6 +47,7 @@ function openNew() {
   if (pwdReq) pwdReq.style.display = 'inline';
   const pwdHint = document.getElementById('c-pwd-hint');
   if (pwdHint) pwdHint.style.display = 'none';
+  document.getElementById('c-cedula').value = '';
   document.getElementById('field-c-estado').style.display = 'none';
   document.getElementById('drawer-title').textContent = 'Nuevo Celador';
   SGAR.clearFormError('c-form-error');
@@ -55,6 +57,7 @@ function openNew() {
 window.editCelador = function(id, c) {
   document.getElementById('c-edit-id').value = id;
   document.getElementById('c-nombre').value = c.nombre;
+  document.getElementById('c-cedula').value = c.cedula || '';
   document.getElementById('c-email').value = c.email;
   const pwdEl = document.getElementById('c-pwd');
   if (pwdEl) { pwdEl.value = ''; pwdEl.required = false; }
@@ -73,6 +76,7 @@ async function submitCelador(e) {
   e.preventDefault();
   const id = document.getElementById('c-edit-id').value;
   const nombre = document.getElementById('c-nombre').value.trim();
+  const cedula = document.getElementById('c-cedula').value.trim();
   const email = document.getElementById('c-email').value.trim();
   const pwd = document.getElementById('c-pwd')?.value || '';
 
@@ -83,6 +87,7 @@ async function submitCelador(e) {
 
   const body = {
     nombre,
+    cedula,
     email,
     rol: 'celador',
   };

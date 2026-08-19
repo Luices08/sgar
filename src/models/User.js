@@ -46,11 +46,16 @@ const userSchema = new mongoose.Schema({
     ref:     'Resident',
     default: null,
   },
+  cedula: {
+    type: String,
+    trim: true,
+  },
 }, {
   timestamps: true,
 });
 
-// Índice compuesto para consultas por tenant + rol
+// Índice compuesto para consultas por tenant + rol y tenant + cedula
 userSchema.index({ tenant_id: 1, rol: 1 });
+userSchema.index({ tenant_id: 1, cedula: 1 });
 
 module.exports = mongoose.model('User', userSchema);

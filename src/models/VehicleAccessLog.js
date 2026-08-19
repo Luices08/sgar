@@ -5,7 +5,8 @@ const mongoose = require('mongoose');
 /**
  * VehicleAccessLog
  * Historial de ingresos y salidas de vehículos.
- * Complementa la colección Visit para trazabilidad vehicular específica.
+ * Registra accesos vehiculares, trazabilidad del conductor, si está autorizado
+ * o si es un conductor no autorizado (identificando al responsable principal).
  */
 const vehicleAccessLogSchema = new mongoose.Schema({
   tenant_id: {
@@ -17,9 +18,9 @@ const vehicleAccessLogSchema = new mongoose.Schema({
 
   // ─── VEHÍCULO ─────────────────────────────────────────────────────────────
   vehicle_id: {
-    type:     mongoose.Schema.Types.ObjectId,
-    ref:      'Vehicle',
-    required: true,
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'Vehicle',
+    default: null,
   },
   placa: {
     type:      String,
@@ -27,35 +28,78 @@ const vehicleAccessLogSchema = new mongoose.Schema({
     trim:      true,
     uppercase: true,
   },
+  tipoVehiculo: {
+    type:    String,
+    enum:    ['Carro', 'Motocicleta', 'Otro'],
+    default: 'Carro',
+  },
+  esVehiculoRegistrado: {
+    type:    Boolean,
+    default: true,
+  },
 
-  // ─── PROPIETARIO REGISTRADO ───────────────────────────────────────────────
+  // ─── RESPONSABLE PRINCIPAL REGISTRADO ─────────────────────────────────────
+  responsablePrincipal_id: {
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'Resident',
+    default: null,
+  },
+  responsablePrincipal_nombre: {
+    type:    String,
+    trim:    true,
+    default: null,
+  },
+  apartamento: {
+    type:      String,
+    trim:      true,
+    uppercase: true,
+    default:   null,
+  },
+
+  // Compatibilidad hacia atrás
   propietario_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref:  'Resident',
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'Resident',
     default: null,
   },
   propietario_nombre: {
-    type: String,
-    trim: true,
+    type:    String,
+    trim:    true,
+    default: null,
   },
 
   // ─── CONDUCTOR REAL ───────────────────────────────────────────────────────
-  // Puede ser el propietario u otra persona (residente o externo)
   conductor_id: {
     type:    mongoose.Schema.Types.ObjectId,
     ref:     'Resident',
-    default: null,   // null si no se identificó por facial
+    default: null,
   },
   conductor_nombre: {
-    type: String,
-    trim: true,
+    type:    String,
+    trim:    true,
+    default: null,
   },
-  esPropietario: {
+  conductor_tipo: {
+    type:    String,
+    enum:    ['residente', 'visitante', 'tercero'],
+    default: 'residente',
+  },
+  // true = El conductor es el Responsable Principal o una Persona Autorizada
+  esAutorizado: {
     type:    Boolean,
-    default: true,   // false = uso por tercero
+    default: true,
+  },
+  // true = Salta advertencia al celador porque el conductor no está autorizado
+  alertaNoAutorizado: {
+    type:    Boolean,
+    default: false,
   },
 
-  // ─── PERMISO (cuando esPropietario es false) ──────────────────────────────
+  // Compatibilidad hacia atrás
+  esPropietario: {
+    type:    Boolean,
+    default: true,
+  },
   permission_id: {
     type:    mongoose.Schema.Types.ObjectId,
     ref:     'VehiclePermission',
@@ -74,20 +118,27 @@ const vehicleAccessLogSchema = new mongoose.Schema({
 
   // ─── TRAZABILIDAD ─────────────────────────────────────────────────────────
   celador_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'User',
+    type:     mongoose.Schema.Types.ObjectId,
+    ref:      'User',
     required: true,
   },
   celador_nombre: {
     type: String,
   },
+  celador_salida_id: {
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'User',
+    default: null,
+  },
+  celador_salida_nombre: {
+    type:    String,
+    default: null,
+  },
   registradoEnPorteria: {
-    // true si el vehículo fue registrado en el momento del ingreso (no preregistrado)
     type:    Boolean,
     default: false,
   },
   visit_id: {
-    // Referencia a la Visit general del conductor (si aplica)
     type:    mongoose.Schema.Types.ObjectId,
     ref:     'Visit',
     default: null,
@@ -98,7 +149,8 @@ const vehicleAccessLogSchema = new mongoose.Schema({
 
 vehicleAccessLogSchema.index({ tenant_id: 1, horaIngreso: -1 });
 vehicleAccessLogSchema.index({ tenant_id: 1, placa: 1 });
-vehicleAccessLogSchema.index({ tenant_id: 1, propietario_id: 1 });
+vehicleAccessLogSchema.index({ tenant_id: 1, responsablePrincipal_id: 1 });
 vehicleAccessLogSchema.index({ tenant_id: 1, vehicle_id: 1 });
+vehicleAccessLogSchema.index({ tenant_id: 1, alertaNoAutorizado: 1 });
 
 module.exports = mongoose.model('VehicleAccessLog', vehicleAccessLogSchema);

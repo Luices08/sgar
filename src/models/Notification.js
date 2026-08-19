@@ -26,12 +26,19 @@ const notificationSchema = new mongoose.Schema({
     type:    String,
     enum:    [
       'visita', 'domicilio', 'vehiculo', 'sistema',
-      'vehiculo_nuevo',      // Vehículo registrado en portería → aviso al admin
-      'permiso_vehiculo',    // Solicitud de permiso → propietario debe responder
-      'permiso_aprobado',    // Propietario dijo Sí → aviso al celador
-      'permiso_rechazado',   // Propietario dijo No → aviso al celador
+      'vehiculo_nuevo',                // Vehículo registrado en portería → aviso al admin
+      'permiso_vehiculo',              // Solicitud de permiso → propietario debe responder
+      'permiso_aprobado',              // Propietario dijo Sí → aviso al celador
+      'permiso_rechazado',             // Propietario dijo No → aviso al celador
+      'invitacion_vehiculo',           // Propietario invita a residente a estar autorizado
+      'invitacion_vehiculo_aceptada',  // Residente aceptó la autorización
+      'invitacion_vehiculo_rechazada', // Residente rechazó la autorización
+      'alerta_vehiculo_no_autorizado', // Alerta al responsable principal por conductor no autorizado
       'tecnico_mantenimiento',
-      'autorizacion_visita', // Celador pide permiso de ingreso a Residente
+      'autorizacion_visita',           // Celador pide permiso de ingreso a Residente
+      'solicitud_ayuda',               // Residente pide ayuda o soporte al celador
+      'panico',                        // Botón de pánico
+      'emergencia',                    // Alerta de emergencia
     ],
     default: 'sistema',
   },
@@ -56,16 +63,37 @@ const notificationSchema = new mongoose.Schema({
     ref:     'Visit',
     default: null,
   },
+  // Referencia a invitación de vehículo
+  vehicle_invitation_id: {
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'VehicleInvitation',
+    default: null,
+  },
+  // Referencia a vehículo
+  vehicle_id: {
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'Vehicle',
+    default: null,
+  },
   // Referencia al permiso vehicular (cuando tipo = 'permiso_*')
   permission_id: {
     type:    mongoose.Schema.Types.ObjectId,
     ref:     'VehiclePermission',
     default: null,
   },
-  // Indica si el residente debe dar una respuesta (para permisos vehiculares)
+  // Indica si el residente debe dar una respuesta (para permisos vehiculares o recepción de domicilios)
   requiereRespuesta: {
     type:    Boolean,
     default: false,
+  },
+  estadoDomicilio: {
+    type:    String,
+    enum:    ['pendiente', 'recibido', 'ingresado'],
+    default: null,
+  },
+  fechaRecepcion: {
+    type:    Date,
+    default: null,
   },
   leida: {
     type:    Boolean,

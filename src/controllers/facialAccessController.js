@@ -209,11 +209,33 @@ const verificarIdentidad = asyncHandler(async (req, res) => {
   }
 
   const { resident } = match;
-  const vehiculos = await Vehicle.find({
-    tenant_id:   req.tenantId,
-    resident_id: resident._id,
-    activo:      true,
-  }).lean();
+  const [vehiculos, openVisit] = await Promise.all([
+    Vehicle.find({
+      tenant_id: req.tenantId,
+      activo:    true,
+      $or: [
+        { responsablePrincipal: resident._id },
+        { autorizados: resident._id },
+        { propietarios: resident._id },
+      ],
+    }).lean(),
+    Visit.findOne({
+      tenant_id:   req.tenantId,
+      resident_id: resident._id,
+      tipo:        VISIT_TYPES.RESIDENTE,
+      horaSalida:  null,
+      eliminado:   false,
+    }).sort({ horaIngreso: -1 }).lean(),
+  ]);
+
+  let openVehicleLog = null;
+  if (openVisit) {
+    openVehicleLog = await VehicleAccessLog.findOne({
+      tenant_id:  req.tenantId,
+      visit_id:   openVisit._id,
+      horaSalida: null,
+    }).lean();
+  }
 
   return ok(res, {
     resident: {
@@ -225,6 +247,10 @@ const verificarIdentidad = asyncHandler(async (req, res) => {
     },
     vehiculos,
     tieneVehiculos: vehiculos.length > 0,
+    openVisit:      openVisit || null,
+    openVehicleLog: openVehicleLog || null,
+    estadoAcceso:   openVisit ? 'dentro' : 'fuera',
+    dentro:         !!openVisit,
     facial: {
       confidence: match.comparison?.confidence || null,
       threshold:  match.comparison?.threshold  || null,
@@ -235,7 +261,7 @@ const verificarIdentidad = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REGISTRAR INGRESO
+// REGISTRAR INGRESO (o salida si ya tiene acceso abierto)
 // POST /api/facial-access/ingreso
 // ─────────────────────────────────────────────────────────────────────────────
 const registrarIngreso = asyncHandler(async (req, res) => {
@@ -253,10 +279,57 @@ const registrarIngreso = asyncHandler(async (req, res) => {
   }
   const resident = match.resident;
 
+  // Comprobar si el residente ya tiene un acceso abierto (horaSalida == null)
+  const openVisit = await Visit.findOne({
+    tenant_id:   req.tenantId,
+    resident_id: resident._id,
+    tipo:        VISIT_TYPES.RESIDENTE,
+    horaSalida:  null,
+    eliminado:   false,
+  }).sort({ horaIngreso: -1 });
+
+  // CASO SALIDA: Ya estaba adentro → cerrar el mismo acceso
+  if (openVisit) {
+    openVisit.horaSalida            = req.body.horaSalida || new Date();
+    openVisit.metodoSalida          = ID_METHODS.FACIAL;
+    openVisit.celador_salida_id     = req.user.user_id;
+    openVisit.celador_salida_nombre = req.user.nombre;
+    await openVisit.save();
+
+    let vehicleLog = null;
+    vehicleLog = await VehicleAccessLog.findOneAndUpdate(
+      { tenant_id: req.tenantId, visit_id: openVisit._id, horaSalida: null },
+      {
+        horaSalida:            openVisit.horaSalida,
+        celador_salida_id:     req.user.user_id,
+        celador_salida_nombre: req.user.nombre,
+      },
+      { new: true }
+    );
+
+    return ok(res, {
+      visit: openVisit,
+      accion: 'salida',
+      esSalida: true,
+      residente: {
+        _id:         resident._id,
+        nombre:      resident.nombre,
+        apartamento: resident.apartamento,
+      },
+      vehicleLog,
+      facial: {
+        confidence: match.comparison?.confidence || null,
+        distance:   match.comparison?.distance   || null,
+        method:     match.comparison?.method     || null,
+      },
+    }, 'Salida de residente registrada');
+  }
+
+  // CASO ENTRADA: No tiene acceso abierto → crear nuevo registro
   // Deduplicación offline→online
   if (localId) {
     const existing = await Visit.findOne({ localId, tenant_id: req.tenantId });
-    if (existing) return ok(res, { visit: existing }, 'Ya sincronizado');
+    if (existing) return ok(res, { visit: existing, accion: 'ingreso', esIngreso: true }, 'Ya sincronizado');
   }
 
   const visit = await Visit.create({
@@ -267,6 +340,7 @@ const registrarIngreso = asyncHandler(async (req, res) => {
     apartamento:          resident.apartamento,
     resident_id:          resident._id,
     horaIngreso:          new Date(),
+    horaSalida:           null,
     celador_id:           req.user.user_id,
     celador_nombre:       req.user.nombre,
     metodoIdentificacion: ID_METHODS.FACIAL,
@@ -288,19 +362,31 @@ const registrarIngreso = asyncHandler(async (req, res) => {
       return error(res, 'Vehículo no encontrado o no pertenece a este conjunto', 404);
     }
 
+    const isPrincipal = vehicle.responsablePrincipal && String(vehicle.responsablePrincipal) === String(resident._id);
+    const isAuth = vehicle.autorizados?.some(a => String(a) === String(resident._id)) || vehicle.propietarios?.some(p => String(p) === String(resident._id));
+    const esAutorizado = isPrincipal || isAuth;
+
     vehicleLog = await VehicleAccessLog.create({
-      tenant_id:          req.tenantId,
-      vehicle_id:         vehicle._id,
-      placa:              vehicle.placa,
-      propietario_id:     vehicle.resident_id,
-      propietario_nombre: resident.nombre,
-      conductor_id:       resident._id,
-      conductor_nombre:   resident.nombre,
-      esPropietario:      true,
-      horaIngreso:        new Date(),
-      celador_id:         req.user.user_id,
-      celador_nombre:     req.user.nombre,
-      visit_id:           visit._id,
+      tenant_id:                   req.tenantId,
+      vehicle_id:                  vehicle._id,
+      placa:                       vehicle.placa,
+      tipoVehiculo:                vehicle.tipo || 'Carro',
+      esVehiculoRegistrado:        !vehicle.esExterno,
+      responsablePrincipal_id:     vehicle.responsablePrincipal || resident._id,
+      responsablePrincipal_nombre: resident.nombre,
+      propietario_id:              vehicle.responsablePrincipal || resident._id,
+      propietario_nombre:          resident.nombre,
+      apartamento:                 vehicle.apartamento || resident.apartamento,
+      conductor_id:                resident._id,
+      conductor_nombre:            resident.nombre,
+      conductor_tipo:              'residente',
+      esAutorizado:                esAutorizado,
+      alertaNoAutorizado:          !esAutorizado,
+      esPropietario:               esAutorizado,
+      horaIngreso:                 new Date(),
+      celador_id:                  req.user.user_id,
+      celador_nombre:              req.user.nombre,
+      visit_id:                    visit._id,
     });
     vehicleInfo = vehicle;
 
@@ -358,6 +444,8 @@ const registrarIngreso = asyncHandler(async (req, res) => {
 
   return created(res, {
     visit,
+    accion: 'ingreso',
+    esIngreso: true,
     residente: {
       _id:         resident._id,
       nombre:      resident.nombre,
@@ -387,19 +475,36 @@ const registrarSalida = asyncHandler(async (req, res) => {
   if (!visit) return error(res, 'Registro de ingreso no encontrado', 404);
   if (visit.horaSalida) return error(res, 'Este residente ya tiene hora de salida registrada', 400);
 
-  visit.horaSalida = req.body.horaSalida || new Date();
+  visit.horaSalida            = req.body.horaSalida || new Date();
+  visit.metodoSalida          = req.body.metodoSalida || ID_METHODS.FACIAL;
+  visit.celador_salida_id     = req.user.user_id;
+  visit.celador_salida_nombre = req.user.nombre;
   await visit.save();
 
   let vehicleLog = null;
   if (req.body.vehicleLogId) {
     vehicleLog = await VehicleAccessLog.findOneAndUpdate(
       { _id: req.body.vehicleLogId, tenant_id: req.tenantId, horaSalida: null },
-      { horaSalida: visit.horaSalida },
+      {
+        horaSalida:            visit.horaSalida,
+        celador_salida_id:     req.user.user_id,
+        celador_salida_nombre: req.user.nombre,
+      },
+      { new: true }
+    );
+  } else {
+    vehicleLog = await VehicleAccessLog.findOneAndUpdate(
+      { visit_id: visit._id, tenant_id: req.tenantId, horaSalida: null },
+      {
+        horaSalida:            visit.horaSalida,
+        celador_salida_id:     req.user.user_id,
+        celador_salida_nombre: req.user.nombre,
+      },
       { new: true }
     );
   }
 
-  return ok(res, { visit, vehicleLog }, 'Salida de residente registrada');
+  return ok(res, { visit, vehicleLog, accion: 'salida', esSalida: true }, 'Salida de residente registrada');
 });
 
 module.exports = {

@@ -31,6 +31,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '..', 'views'));
 
 // ─── ARCHIVOS ESTÁTICOS ────────────────────────────────────────────────────────
+app.use('/static/shared', express.static(path.join(__dirname, '..', 'public', 'shared')));
 app.use('/static/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
 app.use('/static/porteria', express.static(path.join(__dirname, '..', 'public', 'porteria')));
 app.use('/static/residente', express.static(path.join(__dirname, '..', 'public', 'residente')));
@@ -38,8 +39,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 app.use('/models', express.static(path.join(__dirname, '../public/models')));
 app.get('/sw.js', (req, res) => res.status(204).end());
 
-// ─── RUTAS ─────────────────────────────────────────────────────────────────────
-// Se registran en ZIP 2 (auth) y subsiguientes
+// ─── RUTAS DE API ──────────────────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tenants', require('./routes/tenants'));
 app.use('/api/users', require('./routes/users'));
@@ -48,12 +48,13 @@ app.use('/api/visits', require('./routes/visits'));
 app.use('/api/vehicles', require('./routes/vehicles'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/invitations', require('./routes/invitations'));
-app.use('/api/vehicle-access', require('./routes/vehicleAccess'));  // Historial + permisos vehiculares
-app.use('/api/visitors', require('./routes/visitors'));        // Registro manual + código
-app.use('/api/facial-access', require('./routes/facialAccess'));    // Reconocimiento facial residentes
-app.use('/api/facial-enrollment', require('./routes/facialEnrollment')); // Enrolamiento biométrico
+app.use('/api/vehicle-access', require('./routes/vehicleAccess'));
+app.use('/api/visitors', require('./routes/visitors'));
+app.use('/api/facial-access', require('./routes/facialAccess'));
+app.use('/api/facial-enrollment', require('./routes/facialEnrollment'));
+app.use('/api/analytics', require('./routes/analytics'));
 
-// Rutas de vistas EJS
+// ─── RUTAS DE VISTAS (EJS) ─────────────────────────────────────────────────────
 app.use('/admin', require('./routes/views/admin'));
 app.use('/porteria', require('./routes/views/porteria'));
 app.use('/residente', require('./routes/views/residente'));

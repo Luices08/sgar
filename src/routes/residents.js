@@ -6,7 +6,7 @@ const tf        = require('../middlewares/tenantFilter');
 const upload    = require('../config/multer');
 const c         = require('../controllers/residentController');
 
-router.get('/',              auth, authorize.conjuntoStaff, tf, c.list);
+router.get('/',              auth, tf, c.list);
 router.get('/:id',           auth, authorize.conjuntoStaff, tf, c.getOne);
 router.post('/',             auth, authorize.adminAndConjunto, upload.single('foto'), tf, c.create);
 router.put('/:id',           auth, authorize.adminAndConjunto, upload.single('foto'), tf, c.update);

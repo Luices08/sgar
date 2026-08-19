@@ -37,16 +37,17 @@ async function loadUsers() {
 
   const tbody = document.getElementById('users-tbody');
   if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="table-loading">Sin usuarios</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="table-loading">Sin usuarios</td></tr>';
     return;
   }
 
   tbody.innerHTML = users.map(u => `
     <tr>
       <td>${u.nombre}</td>
+      <td>${u.cedula || '—'}</td>
       <td>${u.email}</td>
       <td><span class="badge" style="background:#f0f0f0;color:#555">${u.rol}</span></td>
-      <td>—</td>
+      <td>${u.tenant_id?.nombre || (u.tenant_id ? 'Asignado' : '—')}</td>
       <td>${SGAR.activeBadge(u.activo)}</td>
       <td>
         <button class="btn-secondary btn-sm" onclick="toggleUser('${u._id}', ${u.activo})">
@@ -61,6 +62,8 @@ async function loadUsers() {
 
 function openNew() {
   document.getElementById('form-user').reset();
+  const cedEl = document.getElementById('u-cedula');
+  if (cedEl) cedEl.value = '';
   document.getElementById('field-tenant').style.display = 'none';
   SGAR.clearFormError('u-form-error');
   SGAR.openDrawer('drawer-user');
@@ -70,6 +73,7 @@ async function submitUser(e) {
   e.preventDefault();
   const body = {
     nombre:    document.getElementById('u-nombre').value.trim(),
+    cedula:    document.getElementById('u-cedula')?.value.trim() || undefined,
     email:     document.getElementById('u-email').value.trim(),
     password:  document.getElementById('u-pwd').value,
     rol:       document.getElementById('u-rol').value,

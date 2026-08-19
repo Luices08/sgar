@@ -5,9 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#2563eb">
   <title>Mi Portal — SGAR</title>
   <link rel="manifest" href="/static/residente/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/static/shared/img/app-icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/residente/css/residente.css">
 </head>
 <body>
@@ -55,6 +59,16 @@
       </svg>
       <span>Invitaciones</span>
     </button>
+    <button class="tab-btn" data-tab="vehiculos">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2">
+        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+        <circle cx="7" cy="17" r="2"/>
+        <path d="M9 17h6"/>
+        <circle cx="17" cy="17" r="2"/>
+      </svg>
+      <span>Vehículos</span>
+      <span class="tab-badge" id="badge-vehiculos" style="display:none">0</span>
+    </button>
   </nav>
 
   <!-- Contenido de tabs -->
@@ -62,12 +76,83 @@
 
     <!-- Tab: Notificaciones -->
     <div id="tab-notificaciones" class="tab-pane active">
-      <div class="pane-header">
-        <h2 class="pane-title">Avisos de acceso</h2>
-        <button class="link-btn" id="btn-mark-read">Marcar todo leído</button>
+
+      <section class="welcome-banner">
+        <div class="welcome-banner-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <h1>Avisos de acceso</h1>
+        <p>Entérate de la información y novedades del conjunto.</p>
+        <button class="link-btn banner-link-btn" id="btn-mark-read">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Marcar todo como leído
+        </button>
+      </section>
+
+      <div class="stats-grid">
+        <div class="stat-card-sm">
+          <div class="stat-card-icon icon-blue">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div><span class="stat-card-num" id="stat-no-leidos">0</span><span class="stat-card-label">Avisos no leídos</span></div>
+        </div>
+        <div class="stat-card-sm">
+          <div class="stat-card-icon icon-green">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div><span class="stat-card-num" id="stat-leidos">0</span><span class="stat-card-label">Avisos leídos</span></div>
+        </div>
+        <div class="stat-card-sm">
+          <div class="stat-card-icon icon-amber">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div><span class="stat-card-num" id="stat-invitaciones">0</span><span class="stat-card-label">Invitaciones activas</span></div>
+        </div>
+        <div class="stat-card-sm">
+          <div class="stat-card-icon icon-purple">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div><span class="stat-card-num" id="stat-historial">0</span><span class="stat-card-label">Total historial</span></div>
+        </div>
       </div>
-      <div id="notif-list">
-        <div class="empty-state-sm">Cargando…</div>
+
+      <div class="avisos-columns">
+        <div class="panel-card">
+          <div class="pane-header">
+            <h2 class="pane-title">Avisos recientes</h2>
+          </div>
+          <div id="notif-list">
+            <div class="empty-state-sm">Cargando…</div>
+          </div>
+        </div>
+
+        <div class="panel-card quick-actions-card">
+          <div class="pane-header">
+            <h2 class="pane-title">Acciones rápidas</h2>
+          </div>
+          <div class="quick-actions-list">
+            <button class="quick-action-item" id="qa-historial">
+              <span class="qa-icon icon-blue"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              <span class="qa-text"><strong>Ver historial de accesos</strong><small>Consulta tus ingresos y salidas al conjunto.</small></span>
+              <svg class="qa-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="quick-action-item" id="qa-invitaciones">
+              <span class="qa-icon icon-green"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+              <span class="qa-text"><strong>Mis invitaciones</strong><small>Revisa las invitaciones que tienes pendientes.</small></span>
+              <svg class="qa-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="quick-action-item" id="qa-vehiculos">
+              <span class="qa-icon icon-amber"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></span>
+              <span class="qa-text"><strong>Mis vehículos y autorizaciones</strong><small>Gestiona tus vehículos y autoriza a otros residentes.</small></span>
+              <svg class="qa-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <a class="quick-action-item" id="qa-ayuda" href="mailto:soporte@sgar.com">
+              <span class="qa-icon icon-purple"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+              <span class="qa-text"><strong>¿Necesitas ayuda?</strong><small>Contacta a la administración del conjunto.</small></span>
+              <svg class="qa-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -79,7 +164,7 @@
           <option value="">Todos</option>
           <option value="visita">Visitas</option>
           <option value="domicilio">Domicilios</option>
-          <option value="vehiculo">Vehículos</option>
+          <option value="tecnico_mantenimiento">Técnicos</option>
         </select>
       </div>
       <div id="historial-list">
@@ -91,10 +176,47 @@
     <div id="tab-invitaciones" class="tab-pane">
       <div class="pane-header">
         <h2 class="pane-title">Mis invitaciones</h2>
-        <button class="btn-action-sm" id="btn-nueva-inv">+ Nueva</button>
+        <button class="btn-primary-sm" id="btn-nueva-inv">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Nueva
+        </button>
       </div>
       <div id="invitaciones-list">
         <div class="empty-state-sm">Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Tab: Vehículos -->
+    <div id="tab-vehiculos" class="tab-pane">
+      <div class="pane-header">
+        <h2 class="pane-title">Mis Vehículos</h2>
+      </div>
+
+      <!-- Solicitudes/Invitaciones recibidas pendientes -->
+      <div id="vehiculos-invitaciones-recibidas-container" style="display:none; margin-bottom: 20px;">
+        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius-lg); padding:14px; margin-bottom:16px;">
+          <h3 style="font-size:14px; font-weight:700; color:#1e40af; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Invitaciones de vehículos pendientes por responder
+          </h3>
+          <div id="vehiculos-recibidas-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+      </div>
+
+      <!-- Lista de vehículos registrados -->
+      <div id="vehiculos-list" style="display:flex; flex-direction:column; gap:14px;">
+        <div class="empty-state-sm">Cargando vehículos…</div>
+      </div>
+
+      <!-- Historial de invitaciones enviadas -->
+      <div id="vehiculos-invitaciones-enviadas-container" style="margin-top: 24px;">
+        <h3 style="font-size:14px; font-weight:700; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">
+          Invitaciones enviadas
+        </h3>
+        <div id="vehiculos-enviadas-list" style="display:flex; flex-direction:column; gap:8px;"></div>
       </div>
     </div>
 
@@ -134,7 +256,7 @@
   <div class="drawer-body" id="drawer-body"></div>
 </div>
 
-<!-- ─── MODAL: código de invitación ──────────────────────────────────────── -->
+<!-- ─── MODAL: código de invitación / invitar autorizado ────────────────── -->
 <div class="modal-overlay" id="modal-overlay" style="display:none">
   <div class="modal-card" id="modal-card">
     <button class="modal-close" id="modal-close">✕</button>
@@ -142,6 +264,7 @@
   </div>
 </div>
 
+<script src="/static/shared/js/sgar-poll.js"></script>
 <script src="/static/residente/js/residente.js"></script>
 </body>
 </html>

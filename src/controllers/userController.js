@@ -14,11 +14,17 @@ const list = asyncHandler(async (req, res) => {
   const skip  = (page - 1) * limit;
 
   const filter = {};
-  if (req.tenantId) filter.tenant_id = req.tenantId;
+  if (req.user.rol !== ROLES.ADMIN_CONTROL || req.tenantId) {
+    filter.tenant_id = req.tenantId;
+  }
   if (req.query.rol) filter.rol = req.query.rol;
+  if (req.query.q) {
+    const qRe = new RegExp(req.query.q.trim(), 'i');
+    filter.$or = [{ nombre: qRe }, { email: qRe }];
+  }
 
   const [users, total] = await Promise.all([
-    User.find(filter).select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit),
+    User.find(filter).populate('tenant_id', 'nombre').select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit),
     User.countDocuments(filter),
   ]);
 
@@ -27,7 +33,7 @@ const list = asyncHandler(async (req, res) => {
 
 // ─── CREAR USUARIO ────────────────────────────────────────────────────────────
 const create = asyncHandler(async (req, res) => {
-  const { nombre, email, password, rol, tenant_id } = req.body;
+  const { nombre, email, password, rol, tenant_id, cedula } = req.body;
   if (!nombre || !email || !rol) {
     return error(res, 'nombre, email y rol son requeridos', 400);
   }
@@ -37,15 +43,35 @@ const create = asyncHandler(async (req, res) => {
     return error(res, 'Sin permisos para crear AdminControl', 403);
   }
 
-  const exists = await User.findOne({ email: email.toLowerCase() });
-  if (exists) return error(res, 'El email ya está registrado', 409);
+  // Aislamiento: AdminConjunto solo puede crear usuarios dentro de su propio tenant
+  const targetTenantId = req.user.rol === ROLES.ADMIN_CONTROL
+    ? (tenant_id || req.tenantId || null)
+    : req.tenantId;
+
+  if (req.user.rol !== ROLES.ADMIN_CONTROL && !targetTenantId) {
+    return error(res, 'No se pudo determinar el conjunto para asignar el usuario', 403);
+  }
+
+  const exists = await User.findOne({ email: email.toLowerCase().trim() });
+  if (exists) return error(res, 'El email ya está registrado en la plataforma', 409);
+
+  const cedTrim = cedula && String(cedula).trim() ? String(cedula).trim() : null;
+  if (cedTrim) {
+    const userQuery = {
+      cedula: { $regex: new RegExp(`^${cedTrim.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
+    };
+    if (targetTenantId) userQuery.tenant_id = targetTenantId;
+    const existingUser = await User.findOne(userQuery);
+    if (existingUser) {
+      return error(res, `Ya existe un usuario registrado con la cédula ${cedTrim} (${existingUser.nombre})`, 409);
+    }
+  }
 
   // Limitar a 3 admins por conjunto si el rol es adminConjunto
   if (rol === ROLES.ADMIN_CONJUNTO) {
-    const filterTenant = tenant_id || req.tenantId || null;
-    const adminCount = await User.countDocuments({ tenant_id: filterTenant, rol: ROLES.ADMIN_CONJUNTO });
+    const adminCount = await User.countDocuments({ tenant_id: targetTenantId, rol: ROLES.ADMIN_CONJUNTO, activo: true });
     if (adminCount >= 3) {
-      return error(res, 'Límite máximo de 3 administradores por conjunto alcanzado', 400);
+      return error(res, 'Límite máximo de 3 administradores activos por conjunto alcanzado', 400);
     }
   }
 
@@ -60,7 +86,6 @@ const create = asyncHandler(async (req, res) => {
   } else {
     // Para residentes, si no se envía o es muy corta, generamos una contraseña segura
     if (!passwordToHash || passwordToHash.length < 6) {
-      // generar una contraseña alfanumérica corta y legible
       passwordToHash = crypto.randomBytes(6).toString('base64').replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
       plainPassword = passwordToHash;
     }
@@ -68,11 +93,12 @@ const create = asyncHandler(async (req, res) => {
 
   const hashed = await bcrypt.hash(passwordToHash, 12);
   const user   = await User.create({
-    nombre,
-    email:    email.toLowerCase().trim(),
-    password: hashed,
+    nombre:    nombre.trim(),
+    email:     email.toLowerCase().trim(),
+    password:  hashed,
     rol,
-    tenant_id: tenant_id || req.tenantId || null,
+    tenant_id: targetTenantId,
+    cedula:    cedTrim || undefined,
     activo:    true,
   });
 
@@ -80,7 +106,7 @@ const create = asyncHandler(async (req, res) => {
   const payload = { user: userObj };
   if (plainPassword) payload.plainPassword = plainPassword;
 
-  return created(res, payload, 'Usuario creado');
+  return created(res, payload, 'Usuario creado exitosamente');
 });
 
 // ─── ACTUALIZAR ESTADO ────────────────────────────────────────────────────────
@@ -110,9 +136,15 @@ const resetPassword = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return error(res, 'Usuario no encontrado', 404);
 
+  if (req.user.rol !== ROLES.ADMIN_CONTROL) {
+    if (!user.tenant_id || user.tenant_id.toString() !== req.tenantId.toString()) {
+      return error(res, 'Sin permisos sobre este usuario', 403);
+    }
+  }
+
   user.password = await bcrypt.hash(newPassword, 12);
   await user.save();
-  return ok(res, {}, 'Contraseña restablecida');
+  return ok(res, {}, 'Contraseña restablecida exitosamente');
 });
 
 // ─── ELIMINAR USUARIO ──────────────────────────────────────────────────────────
@@ -127,13 +159,19 @@ const remove = asyncHandler(async (req, res) => {
     }
   }
 
+  // Si es un residente, desvincular de Resident
+  if (user.resident_id) {
+    const Resident = require('../models/Resident');
+    await Resident.findByIdAndUpdate(user.resident_id, { $unset: { user_id: 1 } });
+  }
+
   await User.findByIdAndDelete(req.params.id);
   return ok(res, {}, 'Usuario eliminado exitosamente');
 });
 
 // ─── ACTUALIZAR USUARIO ───────────────────────────────────────────────────────
 const update = asyncHandler(async (req, res) => {
-  const { nombre, email } = req.body;
+  const { nombre, email, cedula } = req.body;
   const user = await User.findById(req.params.id);
   if (!user) return error(res, 'Usuario no encontrado', 404);
 
@@ -143,8 +181,30 @@ const update = asyncHandler(async (req, res) => {
     }
   }
 
-  if (nombre !== undefined) user.nombre = nombre;
-  if (email !== undefined) user.email = email.toLowerCase().trim();
+  if (nombre !== undefined) user.nombre = nombre.trim();
+  if (email !== undefined) {
+    const newEmail = email.toLowerCase().trim();
+    if (newEmail !== user.email) {
+      const emailExists = await User.findOne({ _id: { $ne: user._id }, email: newEmail });
+      if (emailExists) return error(res, 'El correo ya pertenece a otro usuario registrado', 409);
+      user.email = newEmail;
+    }
+  }
+  if (cedula !== undefined) {
+    const cedTrim = cedula && String(cedula).trim() ? String(cedula).trim() : null;
+    if (cedTrim) {
+      const userQuery = {
+        _id: { $ne: user._id },
+        cedula: { $regex: new RegExp(`^${cedTrim.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
+      };
+      if (user.tenant_id) userQuery.tenant_id = user.tenant_id;
+      const existingUser = await User.findOne(userQuery);
+      if (existingUser) {
+        return error(res, `La cédula ${cedTrim} ya pertenece a otro usuario (${existingUser.nombre})`, 409);
+      }
+    }
+    user.cedula = cedTrim || '';
+  }
 
   await user.save();
   return ok(res, { user }, 'Usuario actualizado exitosamente');

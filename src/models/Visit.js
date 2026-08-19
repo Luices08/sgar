@@ -62,9 +62,15 @@ const visitSchema = new mongoose.Schema({
     default: null,
   },
 
-  // ─── TIEMPOS ──────────────────────────────────────────────────────────────
-  horaIngreso:  { type: Date, default: Date.now },
-  horaSalida:   { type: Date, default: null },
+  // ─── TIEMPOS Y ESTADOS DE DOMICILIOS ──────────────────────────────────────
+  horaIngreso:        { type: Date, default: Date.now },
+  horaSalida:         { type: Date, default: null },
+  estadoDomicilio:    { type: String, enum: ['pendiente', 'recibido', 'ingresado'], default: null },
+  fechaLlegada:       { type: Date, default: null },
+  fechaNotificacion:  { type: Date, default: null },
+  fechaRecepcion:     { type: Date, default: null },
+  recibidoPor:        { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', default: null },
+  recibidoPorNombre:  { type: String, default: null },
 
   // ─── TRAZABILIDAD ─────────────────────────────────────────────────────────
   celador_id: {
@@ -79,6 +85,21 @@ const visitSchema = new mongoose.Schema({
     type:    String,
     enum:    Object.values(ID_METHODS),
     default: ID_METHODS.MANUAL,
+  },
+  // Trazabilidad de Salida
+  metodoSalida: {
+    type:    String,
+    enum:    Object.values(ID_METHODS),
+    default: null,
+  },
+  celador_salida_id: {
+    type:    mongoose.Schema.Types.ObjectId,
+    ref:     'User',
+    default: null,
+  },
+  celador_salida_nombre: {
+    type:    String,
+    default: null,
   },
   // Para registros vinculados a invitación
   invitation_id: {
@@ -116,6 +137,7 @@ visitSchema.index({ tenant_id: 1, horaIngreso: -1 });
 visitSchema.index({ tenant_id: 1, apartamento: 1 });
 visitSchema.index({ tenant_id: 1, celador_id: 1 });
 visitSchema.index({ tenant_id: 1, tipo: 1 });
+visitSchema.index({ tenant_id: 1, resident_id: 1, horaSalida: 1 });
 visitSchema.index({ localId: 1 }, { sparse: true });
 
 module.exports = mongoose.model('Visit', visitSchema);

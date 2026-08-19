@@ -6,6 +6,7 @@ const tf        = require('../middlewares/tenantFilter');
 const c         = require('../controllers/invitationController');
 const { ROLES } = require('../config/constants');
 
+router.get('/',           auth, authorize(ROLES.RESIDENTE), tf, c.myInvitations);
 router.get('/mine',        auth, authorize(ROLES.RESIDENTE), tf, c.myInvitations);
 router.post('/',           auth, authorize(ROLES.RESIDENTE), tf, c.create);
 router.delete('/:id',      auth, authorize(ROLES.RESIDENTE), tf, c.cancel);

@@ -6,26 +6,16 @@ const authorize = require('../middlewares/authorize');
 const tf        = require('../middlewares/tenantFilter');
 const c         = require('../controllers/vehicleAccessController');
 
-// ── Celador: ingresos ─────────────────────────────────────────────────────────
-// Ingreso de vehículo registrado (propietario conduce)
-router.post('/ingreso',       auth, authorize.conjuntoStaff, tf, c.registrarIngreso);
-// Ingreso de vehículo nuevo (se registra en el momento)
-router.post('/ingreso-nuevo', auth, authorize.conjuntoStaff, tf, c.registrarIngresoNuevo);
-// Iniciar flujo de permiso (conductor ≠ propietario)
-router.post('/solicitar-permiso', auth, authorize.conjuntoStaff, tf, c.solicitarPermiso);
+// ── Búsqueda de vehículos y placas ────────────────────────────────────────────
+router.post('/buscar-placa',   auth, tf, c.buscarPlaca);
+router.get('/buscar/:placa',   auth, tf, c.buscarPlaca);
 
-// ── Propietario (Residente): responder a la solicitud de permiso ───────────────
-router.patch('/permiso/:id/responder', auth, tf, c.responderPermiso);
-
-// ── Celador: consultar estado del permiso (polling) ───────────────────────────
-router.get('/permiso/:id/estado',  auth, authorize.conjuntoStaff, tf, c.estadoPermiso);
-// Completar el acceso después de verificar facial del conductor
-router.post('/permiso/:id/completar', auth, authorize.conjuntoStaff, tf, c.completarPermisoAcceso);
-
-// ── Salida de vehículo ────────────────────────────────────────────────────────
+// ── Registro de ingreso y salida ──────────────────────────────────────────────
+router.post('/ingreso',        auth, authorize.conjuntoStaff, tf, c.registrarIngreso);
+router.post('/salida',         auth, authorize.conjuntoStaff, tf, c.registrarSalida);
 router.patch('/:logId/salida', auth, authorize.conjuntoStaff, tf, c.registrarSalida);
 
-// ── Historial / auditoría ──────────────────────────────────────────────────────
-router.get('/', auth, authorize.conjuntoStaff, tf, c.listarLogs);
+// ── Historial / auditoría de accesos vehiculares ──────────────────────────────
+router.get('/',                auth, authorize.conjuntoStaff, tf, c.listarLogs);
 
 module.exports = router;

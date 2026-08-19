@@ -9,9 +9,22 @@ const vehicleSchema = new mongoose.Schema({
     required: true,
     index:    true,
   },
-  propietarios: [{
+  // Responsable principal del vehículo (propietario o residente principal)
+  responsablePrincipal: {
     type:    mongoose.Schema.Types.ObjectId,
     ref:     'Resident',
+    default: null,
+    index:   true,
+  },
+  // Personas autorizadas a utilizar el vehículo (otros residentes del conjunto)
+  autorizados: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:  'Resident',
+  }],
+  // Mantenemos propietarios para compatibilidad
+  propietarios: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:  'Resident',
   }],
   tipo: {
     type:     String,
@@ -64,6 +77,11 @@ const vehicleSchema = new mongoose.Schema({
     type:    Boolean,
     default: true,
   },
+  // Diferencia si es un vehículo formal registrado o un vehículo externo registrado en portería
+  esExterno: {
+    type:    Boolean,
+    default: false,
+  },
   registradoEnPorteria: {
     type:    Boolean,
     default: false,
@@ -77,5 +95,8 @@ const vehicleSchema = new mongoose.Schema({
 });
 
 vehicleSchema.index({ tenant_id: 1, placa: 1 });
+vehicleSchema.index({ tenant_id: 1, responsablePrincipal: 1 });
+vehicleSchema.index({ tenant_id: 1, autorizados: 1 });
+vehicleSchema.index({ tenant_id: 1, apartamento: 1 });
 
 module.exports = mongoose.model('Vehicle', vehicleSchema);

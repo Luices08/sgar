@@ -27,10 +27,10 @@
   <div class="table-wrapper">
     <table class="data-table">
       <thead>
-        <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Conjunto</th><th>Estado</th><th>Acciones</th></tr>
+        <tr><th>Nombre</th><th>Cédula</th><th>Email</th><th>Rol</th><th>Conjunto</th><th>Estado</th><th>Acciones</th></tr>
       </thead>
       <tbody id="users-tbody">
-        <tr><td colspan="6" class="table-loading">Cargando…</td></tr>
+        <tr><td colspan="7" class="table-loading">Cargando…</td></tr>
       </tbody>
     </table>
   </div>
@@ -46,6 +46,7 @@
   <div class="drawer-body">
     <form id="form-user">
       <div class="form-field"><label>Nombre *</label><input type="text" id="u-nombre" required></div>
+      <div class="form-field"><label>Cédula</label><input type="text" id="u-cedula" placeholder="1234567890"></div>
       <div class="form-field"><label>Email *</label><input type="email" id="u-email" required></div>
       <div class="form-field"><label>Contraseña *</label><input type="password" id="u-pwd" required></div>
       <div class="form-field">

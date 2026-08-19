@@ -4,39 +4,200 @@
 <body class="admin-layout">
 <%- include('partials/nav') %>
 <main class="main-content">
-  <header class="page-header">
+  <header class="page-header" style="flex-wrap:wrap; gap:12px; margin-bottom:16px;">
     <div>
-      <h1 class="page-title">Analíticas</h1>
-      <p class="page-subtitle" id="analytics-subtitle">Cargando datos…</p>
+      <h1 class="page-title" id="analytics-title">Analíticas Operativas</h1>
+      <p class="page-subtitle" id="analytics-subtitle">Cargando datos reales…</p>
+    </div>
+
+    <!-- Controles de periodo -->
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <div id="drilldown-banner" style="display:none; align-items:center; gap:8px; margin-right:8px;">
+        <span id="drilldown-name" class="badge" style="background:#eff6ff;color:#1d4ed8;font-size:13px;padding:6px 12px;font-weight:700;"></span>
+        <button id="btn-back-global" class="btn-secondary btn-sm">⬅️ Volver a vista general</button>
+      </div>
+
+      <div class="period-selector" style="display:flex; background:var(--card-bg, #fff); border:1px solid var(--border); border-radius:8px; padding:3px;">
+        <button class="btn-period active" data-period="dia" id="btn-period-dia" style="padding:6px 12px; font-size:13px; border-radius:6px; border:none; cursor:pointer; font-weight:600;">Día</button>
+        <button class="btn-period" data-period="semana" id="btn-period-semana" style="padding:6px 12px; font-size:13px; border-radius:6px; border:none; cursor:pointer; font-weight:600; background:transparent; color:var(--text-muted);">Semana</button>
+        <button class="btn-period" data-period="mes" id="btn-period-mes" style="padding:6px 12px; font-size:13px; border-radius:6px; border:none; cursor:pointer; font-weight:600; background:transparent; color:var(--text-muted);">Mes</button>
+      </div>
+
+      <input type="date" id="filter-date" style="padding:6px 10px; font-size:13px; border:1px solid var(--border); border-radius:8px; background:var(--card-bg, #fff); color:var(--text);" title="Seleccionar fecha">
+      <button id="btn-refresh-analytics" class="btn-secondary btn-sm" title="Recargar datos">🔄</button>
     </div>
   </header>
 
-  <!-- AdminControl: gráficas globales -->
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <!-- VISTA 1: SUPERADMIN — Métricas globales y comparativas por conjunto         -->
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
   <div id="view-admincontrol" style="display:none">
-    <div class="charts-grid">
-      <div class="chart-card">
-        <h3 class="chart-title">Ingresos por conjunto — últimos 7 días</h3>
-        <canvas id="chart-ingresos-conjuntos" height="220"></canvas>
+    <!-- Tarjetas de resumen global -->
+    <div class="dashboard-top-strip" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom:20px;">
+      <div class="strip-stat">
+        <span class="strip-number" id="sg-total-entradas" style="color:#15803d">—</span>
+        <span class="strip-label">Entradas Peatonales</span>
       </div>
-      <div class="chart-card">
-        <h3 class="chart-title">Residentes registrados por conjunto</h3>
-        <canvas id="chart-residentes-conjuntos" height="220"></canvas>
+      <div class="strip-stat">
+        <span class="strip-number" id="sg-total-salidas" style="color:#b91c1c">—</span>
+        <span class="strip-label">Salidas Peatonales</span>
+      </div>
+      <div class="strip-stat">
+        <span class="strip-number" id="sg-total-ingresos-veh" style="color:#2563eb">—</span>
+        <span class="strip-label">Ingresos Vehiculares</span>
+      </div>
+      <div class="strip-stat">
+        <span class="strip-number" id="sg-total-salidas-veh" style="color:#d97706">—</span>
+        <span class="strip-label">Salidas Vehiculares</span>
+      </div>
+      <div class="strip-stat">
+        <span class="strip-number" id="sg-total-movimientos" style="font-weight:800">—</span>
+        <span class="strip-label">Total Movimientos</span>
+      </div>
+    </div>
+
+    <!-- Gráfica global comparativa -->
+    <div class="charts-grid" style="margin-bottom:24px;">
+      <div class="chart-card" style="grid-column: 1 / -1;">
+        <h3 class="chart-title">Movimientos Totales por Conjunto Residencial</h3>
+        <canvas id="chart-global-conjuntos" height="120"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabla detallada de conjuntos -->
+    <div class="panel-card" style="padding:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:16px; font-weight:700;">Desglose Operativo por Conjunto</h3>
+        <span class="badge" id="sg-conjuntos-count" style="background:#f1f5f9;color:#475569">0 conjuntos</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Conjunto</th>
+              <th>Ciudad</th>
+              <th>Entradas Peat.</th>
+              <th>Salidas Peat.</th>
+              <th>Ingresos Veh.</th>
+              <th>Salidas Veh.</th>
+              <th>Total Movimientos</th>
+              <th>Estado</th>
+              <th style="text-align:right;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-global-conjuntos">
+            <tr><td colspan="9" class="table-loading">Cargando datos globales…</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- AdminConjunto / Celador: gráficas del conjunto -->
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <!-- VISTA 2: ADMINCONJUNTO & DRILLDOWN — Analíticas detalladas del conjunto       -->
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
   <div id="view-conjunto" style="display:none">
-    <div class="charts-grid">
-      <div class="chart-card">
-        <h3 class="chart-title">Ingresos por tipo de visitante — hoy</h3>
-        <canvas id="chart-tipo" height="220"></canvas>
+    
+    <!-- ── SECCIÓN 1: ACCESOS (Personas / Visitas / Residentes) ── -->
+    <div style="margin-bottom:28px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <h2 style="font-size:17px; font-weight:700; margin:0;">🚶 Registro de Accesos (Personas y Visitas)</h2>
       </div>
-      <div class="chart-card">
-        <h3 class="chart-title">Picos de ingreso por franja horaria — hoy</h3>
-        <canvas id="chart-franjas" height="220"></canvas>
+
+      <div class="dashboard-top-strip" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom:16px;">
+        <div class="strip-stat">
+          <span class="strip-number" id="sc-entradas" style="color:#15803d">—</span>
+          <span class="strip-label">Entradas Registradas</span>
+        </div>
+        <div class="strip-stat">
+          <span class="strip-number" id="sc-salidas" style="color:#b91c1c">—</span>
+          <span class="strip-label">Salidas Registradas</span>
+        </div>
+        <div class="strip-stat">
+          <span class="strip-number" id="sc-total-mov" style="font-weight:800">—</span>
+          <span class="strip-label">Total Accesos</span>
+        </div>
+        <div class="strip-stat">
+          <span class="strip-number" id="sc-dentro" style="color:#2563eb">—</span>
+          <span class="strip-label">Actualmente Dentro</span>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card" style="grid-column: span 2;">
+          <h3 class="chart-title" id="title-chart-accesos-horas">Entradas y Salidas por Hora</h3>
+          <canvas id="chart-accesos-horas" height="140"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Distribución por Tipo de Acceso</h3>
+          <canvas id="chart-accesos-tipo" height="140"></canvas>
+        </div>
       </div>
     </div>
+
+    <!-- ── SECCIÓN 2: VEHÍCULOS (Ingresos, Salidas y Mayor Movimiento) ── -->
+    <div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <h2 style="font-size:17px; font-weight:700; margin:0;">🚗 Control y Tráfico Vehicular</h2>
+      </div>
+
+      <div class="dashboard-top-strip" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom:16px;">
+        <div class="strip-stat">
+          <span class="strip-number" id="sc-ingresos-veh" style="color:#2563eb">—</span>
+          <span class="strip-label">Ingresos Vehiculares</span>
+        </div>
+        <div class="strip-stat">
+          <span class="strip-number" id="sc-salidas-veh" style="color:#d97706">—</span>
+          <span class="strip-label">Salidas Vehiculares</span>
+        </div>
+        <div class="strip-stat">
+          <span class="strip-number" id="sc-total-veh-mov" style="font-weight:800">—</span>
+          <span class="strip-label">Total Movimientos Vehiculares</span>
+        </div>
+        <div class="strip-stat">
+          <span class="strip-number" id="sc-veh-dentro" style="color:#15803d">—</span>
+          <span class="strip-label">Vehículos en Conjunto</span>
+        </div>
+      </div>
+
+      <div class="charts-grid" style="margin-bottom:20px;">
+        <div class="chart-card" style="grid-column: 1 / -1;">
+          <h3 class="chart-title" id="title-chart-vehiculos-horas">Flujo Vehicular por Hora (Ingresos vs Salidas)</h3>
+          <canvas id="chart-vehiculos-horas" height="120"></canvas>
+        </div>
+      </div>
+
+      <!-- Tabla de Vehículos con Mayor Movimiento -->
+      <div class="panel-card" style="padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <h3 style="margin:0; font-size:16px; font-weight:700;">🏆 Vehículos con Mayor Movimiento en el Periodo</h3>
+            <small style="color:var(--text-muted)">Identificación de vehículos más frecuentes y trazabilidad</small>
+          </div>
+          <span class="badge" id="sc-top-veh-count" style="background:#eff6ff;color:#1d4ed8;">Top vehículos</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Placa</th>
+                <th>Tipo</th>
+                <th>Apartamento</th>
+                <th>Responsable Principal</th>
+                <th style="text-align:center;">Ingresos</th>
+                <th style="text-align:center;">Salidas</th>
+                <th style="text-align:center;">Total Movimientos</th>
+                <th>Alertas</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-top-vehiculos">
+              <tr><td colspan="8" class="table-loading">Sin movimientos vehiculares en el periodo seleccionado</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
 

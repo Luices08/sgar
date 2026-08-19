@@ -1,0 +1,14 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1741a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- shield -->
+  <path d="M256 84 L358 122 V246 c0 108 -68 190 -102 208 c-34 -18 -102 -100 -102 -208 V122 Z"
+        fill="none" stroke="#ffffff" stroke-width="18" stroke-linejoin="round"/>
+  <!-- house glyph inside -->
+  <path d="M256 176 L198 222 V308 h38 v-62 h40 v62 h38 v-86 Z" fill="#ffffff"/>
+</svg>

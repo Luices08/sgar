@@ -29,7 +29,7 @@
                 <th>Apartamento</th>
                 <th>Cédula</th>
                 <th>Email</th>
-                <th>Teléfono</th>
+                <th>Presencia</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -89,12 +89,12 @@
               <input type="text" id="r-telefono" placeholder="3001234567">
             </div>
             <div class="form-field">
-              <label>Reconocimiento facial *</label>
+              <label>Reconocimiento facial <span style="font-weight:400; color:var(--text-muted); font-size:12px;">(Opcional)</span></label>
               <div class="camera-capture" id="resident-camera">
                 <video id="r-camera-video" class="camera-video" autoplay playsinline muted></video>
                 <canvas id="r-camera-canvas" class="camera-canvas"></canvas>
                 <div id="r-camera-preview" class="camera-preview">
-                  <span>Sin captura facial</span>
+                  <span>Sin captura facial (Opcional)</span>
                 </div>
                 <div class="camera-actions">
                   <button type="button" class="btn-secondary btn-sm" id="btn-camera-start">Prender cámara</button>
@@ -104,8 +104,7 @@
                     otra</button>
                 </div>
                 <small>
-                  Se extraen los <strong>facial landmarks</strong> (128 puntos) directamente desde la cámara.
-                  No se guarda ninguna foto. Requiere buena iluminación y el rostro centrado.
+                  <strong>Opcional:</strong> Si el residente autoriza biometría facial, se extraen 128 puntos de referencia para acceso automático en portería. Si se omite, el residente podrá ingresar mediante registro manual o credenciales.
                 </small>
               </div>
             </div>

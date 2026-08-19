@@ -42,12 +42,27 @@ async function loadTenants() {
     return;
   }
 
-  grid.innerHTML = tenants.map(t => `
+  grid.innerHTML = tenants.map(t => {
+    let estadoBadge = '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700">🟢 Activo</span>';
+    if (t.estado === 'suspendido') {
+      estadoBadge = '<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700" title="' + (t.motivoSuspension ? SGAR.escHtml(t.motivoSuspension) : '') + '">🔴 Suspendido</span>';
+    } else if (t.estado === 'inactivo' || !t.activo) {
+      estadoBadge = '<span class="badge" style="background:#f1f5f9;color:#475569;font-weight:700">⚪ Inactivo</span>';
+    }
+
+    const nitStr = t.nit ? ` · NIT: ${t.nit}` : '';
+    const adminStr = t.adminPrincipal ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">👤 Admin: <strong>${t.adminPrincipal.nombre}</strong> (${t.adminPrincipal.email})</div>` : '';
+
+    return `
     <div class="tenant-card">
       <div class="tenant-card-img" style="background-image:url('${t.imagenUrl || ''}'); background-color:#e0e0e0;"></div>
       <div class="tenant-card-body">
         <div class="tenant-card-name">${t.nombre}</div>
-        <div class="tenant-card-stats">
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+          ${t.ciudad || 'Bogotá'}${nitStr} · <code>${t.tenant_id}</code>
+        </div>
+        ${adminStr}
+        <div class="tenant-card-stats" style="margin-top:8px;">
           <div class="tenant-stat-item">
             <span class="tenant-stat-num">${t.stats?.residentes ?? '—'}</span>
             <span>Residentes</span>
@@ -57,39 +72,63 @@ async function loadTenants() {
             <span>Celadores</span>
           </div>
           <div class="tenant-stat-item">
-            <span class="tenant-stat-num">${t.activo ? 'Activo' : 'Inactivo'}</span>
-            <span>Estado</span>
+            <span class="tenant-stat-num">${t.stats?.visitas ?? '—'}</span>
+            <span>Visitas</span>
+          </div>
+          <div class="tenant-stat-item" style="margin-left:auto; align-items:flex-end;">
+            ${estadoBadge}
+            <span style="margin-top:5px;font-size:11px;color:var(--text-muted);">Estado</span>
           </div>
         </div>
       </div>
       <div class="tenant-card-actions">
-        <button class="btn-primary btn-sm" onclick="enterTenant(${JSON.stringify(t).replace(/"/g,'&quot;')})">Ver</button>
+        <button class="btn-primary btn-sm" onclick="enterTenant(${JSON.stringify(t).replace(/"/g,'&quot;')})">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Ingresar
+        </button>
         <button class="btn-secondary btn-sm" onclick="editTenant('${t._id}', ${JSON.stringify(t).replace(/"/g,'&quot;')})">Editar</button>
-        <button class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f;" onclick="deleteTenant('${t._id}', '${t.nombre}')">Eliminar</button>
+        <button class="btn-secondary btn-sm" style="color:#dc2626; border-color:#dc2626;" onclick="deleteTenant('${t._id}', '${t.nombre}')">Archivar</button>
       </div>
       <div class="tenant-card-accent-bar" style="background:${t.colorAcento}"></div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function openNewTenant() {
   document.getElementById('tenant-edit-id').value = '';
-  document.getElementById('drawer-title').textContent = 'Nuevo Conjunto';
+  document.getElementById('drawer-title').textContent = 'Nuevo Conjunto Residencial';
   document.getElementById('form-tenant').reset();
   SGAR.clearFormError('form-error');
+  document.getElementById('f-tenant-id').disabled = false;
   document.getElementById('admin-fields').style.display = 'block';
   document.getElementById('admin-crud-section').style.display = 'none';
   document.getElementById('field-estado').style.display = 'none';
+  document.getElementById('field-motivo-suspension').style.display = 'none';
   SGAR.openDrawer('drawer-tenant');
 }
 
 function editTenant(id, t) {
   document.getElementById('tenant-edit-id').value  = id;
-  document.getElementById('drawer-title').textContent = 'Editar Conjunto';
+  document.getElementById('drawer-title').textContent = 'Editar Conjunto Residencial';
   document.getElementById('f-tenant-id').value     = t.tenant_id || '';
+  document.getElementById('f-tenant-id').disabled = true; // slug no modificable en edición directa
   document.getElementById('f-nombre').value         = t.nombre    || '';
+  document.getElementById('f-nit').value            = t.nit       || '';
+  document.getElementById('f-ciudad').value         = t.ciudad    || 'Bogotá';
+  document.getElementById('f-direccion').value      = t.direccion || '';
+  document.getElementById('f-telefono').value       = t.telefono  || '';
+  document.getElementById('f-email-contacto').value = t.emailContacto || '';
   document.getElementById('f-descripcion').value    = t.descripcion || '';
-  document.getElementById('f-activo').value         = t.activo ? 'true' : 'false';
+  
+  const estadoSelect = document.getElementById('f-estado');
+  estadoSelect.value = t.estado || (t.activo ? 'activo' : 'inactivo');
+  document.getElementById('f-motivo-suspension').value = t.motivoSuspension || '';
+  document.getElementById('field-motivo-suspension').style.display = (estadoSelect.value === 'suspendido') ? 'block' : 'none';
+
+  estadoSelect.onchange = () => {
+    document.getElementById('field-motivo-suspension').style.display = (estadoSelect.value === 'suspendido') ? 'block' : 'none';
+  };
+
   document.getElementById('admin-fields').style.display = 'none';
   document.getElementById('admin-crud-section').style.display = 'block';
   document.getElementById('field-estado').style.display = 'block';
@@ -104,17 +143,26 @@ async function submitTenant(e) {
   const isEdit  = !!editId;
   const formData = new FormData();
 
+  formData.append('nombre',        document.getElementById('f-nombre').value.trim());
+  formData.append('nit',           document.getElementById('f-nit').value.trim());
+  formData.append('ciudad',        document.getElementById('f-ciudad').value.trim());
+  formData.append('direccion',     document.getElementById('f-direccion').value.trim());
+  formData.append('telefono',      document.getElementById('f-telefono').value.trim());
+  formData.append('emailContacto', document.getElementById('f-email-contacto').value.trim());
+  formData.append('descripcion',   document.getElementById('f-descripcion').value.trim());
+  formData.append('colorAcento',   '#2563eb');
+
   if (!isEdit) {
     formData.append('tenant_id',     document.getElementById('f-tenant-id').value.trim());
     formData.append('adminEmail',    document.getElementById('f-admin-email').value.trim());
     formData.append('adminNombre',   document.getElementById('f-admin-nombre').value.trim());
     formData.append('adminPassword', document.getElementById('f-admin-pwd').value.trim());
-  }
-  formData.append('nombre',      document.getElementById('f-nombre').value.trim());
-  formData.append('descripcion', document.getElementById('f-descripcion').value.trim());
-  formData.append('colorAcento', '#2563eb');
-  if (isEdit) {
-    formData.append('activo', document.getElementById('f-activo').value);
+  } else {
+    const estado = document.getElementById('f-estado').value;
+    formData.append('estado', estado);
+    if (estado === 'suspendido') {
+      formData.append('motivoSuspension', document.getElementById('f-motivo-suspension').value.trim());
+    }
   }
 
   const file = document.getElementById('f-imagen').files[0];
@@ -126,7 +174,7 @@ async function submitTenant(e) {
     : await SGAR.apiForm('/api/tenants', formData, 'POST');
 
   if (!res || !res.success) {
-    SGAR.showFormError('form-error', res?.message || 'Error al guardar');
+    SGAR.showFormError('form-error', res?.message || 'Error al guardar el conjunto');
     return;
   }
   SGAR.closeDrawer('drawer-tenant');
@@ -134,7 +182,7 @@ async function submitTenant(e) {
 }
 
 async function deleteTenant(id, nombre) {
-  const pwd = prompt(`ELIMINAR CONJUNTO\n\nEstás a punto de eliminar el conjunto "${nombre}" y TODOS sus registros (usuarios, visitas, etc).\nEsta acción NO se puede deshacer.\n\nPara confirmar, ingresa TU contraseña de administrador:`);
+  const pwd = prompt(`ARCHIVAR CONJUNTO\n\nEstás a punto de desactivar y archivar el conjunto "${nombre}".\nLos usuarios de este conjunto ya no podrán ingresar, pero los registros históricos (visitas, accesos, bitácoras) se preservarán.\n\nPara confirmar, ingresa tu contraseña de SuperAdmin:`);
   if (!pwd) return;
 
   const res = await SGAR.api(`/api/tenants/${id}`, {
@@ -143,10 +191,10 @@ async function deleteTenant(id, nombre) {
   });
 
   if (res && res.success) {
-    alert('Conjunto y todos sus vínculos eliminados correctamente.');
+    alert('✓ Conjunto archivado exitosamente. La información histórica ha sido preservada.');
     loadTenants();
   } else {
-    alert(res?.message || 'Error al eliminar conjunto');
+    alert(res?.message || 'Error al archivar conjunto');
   }
 }
 
@@ -281,6 +329,7 @@ function renderTimeline(visits) {
 
   list.innerHTML = visits.map(v => `
     <div class="timeline-item">
+      <div class="ti-icon ${v.tipo}"></div>
       <span class="ti-time">${SGAR.fmtTime(v.horaIngreso)}</span>
       <span class="ti-badge ${v.tipo}">${v.tipo}</span>
       <div class="ti-info">

@@ -12,7 +12,7 @@ function viewData(req, title, page) {
 router.get('/login', (req, res) => {
   res.render('admin/login', {
     title:        'Iniciar Sesión',
-    defaultColor: process.env.DEFAULT_ACCENT_COLOR || '#1a1a2e',
+    defaultColor: process.env.DEFAULT_ACCENT_COLOR || '#2563eb',
   });
 });
 

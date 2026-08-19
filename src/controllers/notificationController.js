@@ -4,24 +4,72 @@ const asyncHandler   = require('../utils/asyncHandler');
 const { ok, error }  = require('../utils/response');
 const Notification   = require('../models/Notification');
 
+const Resident = require('../models/Resident');
+
 // Obtener notificaciones del usuario autenticado
 const myNotifications = asyncHandler(async (req, res) => {
-  const notifs = await Notification.find({
-    user_id: req.user.user_id,
+  let resident = null;
+  if (req.user.resident_id) {
+    resident = await Resident.findById(req.user.resident_id).lean();
+  }
+  if (!resident) {
+    resident = await Resident.findOne({ user_id: req.user.user_id, tenant_id: req.tenantId }).lean();
+  }
+
+  const query = {
     tenant_id: req.tenantId,
-  }).sort({ createdAt: -1 }).limit(50).lean();
+  };
+  if (resident && resident.apartamento) {
+    const aptoReg = new RegExp(`^${resident.apartamento.trim()}$`, 'i');
+    query.$or = [
+      { user_id: req.user.user_id },
+      { apartamento: aptoReg },
+    ];
+  } else {
+    query.user_id = req.user.user_id;
+  }
+
+  const notifs = await Notification.find(query).sort({ createdAt: -1 }).limit(50).lean();
 
   const unread = notifs.filter((n) => !n.leida).length;
-  return ok(res, { notifications: notifs, unread });
+  return ok(res, notifs, 'Notificaciones obtenidas');
 });
 
-// Marcar como leída
+// Marcar todas como leídas
 const markRead = asyncHandler(async (req, res) => {
-  await Notification.updateMany(
-    { user_id: req.user.user_id, tenant_id: req.tenantId, leida: false },
+  let resident = null;
+  if (req.user.resident_id) {
+    resident = await Resident.findById(req.user.resident_id).lean();
+  }
+  if (!resident) {
+    resident = await Resident.findOne({ user_id: req.user.user_id, tenant_id: req.tenantId }).lean();
+  }
+
+  const query = {
+    tenant_id: req.tenantId,
+    leida: false,
+  };
+  if (resident && resident.apartamento) {
+    const aptoReg = new RegExp(`^${resident.apartamento.trim()}$`, 'i');
+    query.$or = [
+      { user_id: req.user.user_id },
+      { apartamento: aptoReg },
+    ];
+  } else {
+    query.user_id = req.user.user_id;
+  }
+
+  await Notification.updateMany(query, { leida: true });
+  return ok(res, {}, 'Notificaciones marcadas como leídas');
+});
+
+// Marcar una notificación individual como leída
+const markOneRead = asyncHandler(async (req, res) => {
+  await Notification.updateOne(
+    { _id: req.params.id, tenant_id: req.tenantId },
     { leida: true }
   );
-  return ok(res, {}, 'Notificaciones marcadas como leídas');
+  return ok(res, {}, 'Notificación marcada como leída');
 });
 
 // ─── AUTORIZACIÓN DE VISITA ────────────────────────────────────────────────────
@@ -68,4 +116,4 @@ const resolveAuth = asyncHandler(async (req, res) => {
   return ok(res, { notif }, `Visita ${status}`);
 });
 
-module.exports = { myNotifications, markRead, requestAuth, authStatus, resolveAuth };
+module.exports = { myNotifications, markRead, markOneRead, requestAuth, authStatus, resolveAuth };

@@ -59,43 +59,73 @@
     <form id="form-tenant" enctype="multipart/form-data">
       <input type="hidden" id="tenant-edit-id">
       <div class="form-field">
-        <label>ID del conjunto *</label>
-        <input type="text" id="f-tenant-id" placeholder="c_lospinos_001" pattern="[a-z0-9_]+" required>
-        <small>Solo letras minúsculas, números y guiones bajos</small>
+        <label>Nombre del conjunto *</label>
+        <input type="text" id="f-nombre" placeholder="Conjunto Residencial Los Pinos" required minlength="3">
       </div>
       <div class="form-field">
-        <label>Nombre del conjunto *</label>
-        <input type="text" id="f-nombre" placeholder="Conjunto Residencial Los Pinos" required>
+        <label>ID del conjunto (Slug para URLs) *</label>
+        <input type="text" id="f-tenant-id" placeholder="c_lospinos_001" pattern="[a-z0-9_-]+" required minlength="3">
+        <small>Solo minúsculas, números, guiones y guiones bajos (ej. los_pinos)</small>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-field">
+          <label>NIT / Identificación</label>
+          <input type="text" id="f-nit" placeholder="900123456-7">
+        </div>
+        <div class="form-field">
+          <label>Ciudad</label>
+          <input type="text" id="f-ciudad" placeholder="Bogotá">
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-field">
+          <label>Dirección</label>
+          <input type="text" id="f-direccion" placeholder="Calle 123 # 45-67">
+        </div>
+        <div class="form-field">
+          <label>Teléfono de contacto</label>
+          <input type="text" id="f-telefono" placeholder="601 2345678">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Email de contacto institucional</label>
+        <input type="email" id="f-email-contacto" placeholder="contacto@lospinos.com">
       </div>
       <div class="form-field">
         <label>Descripción</label>
-        <textarea id="f-descripcion" rows="3" placeholder="Descripción breve…"></textarea>
+        <textarea id="f-descripcion" rows="2" placeholder="Descripción breve…"></textarea>
       </div>
       <div class="form-field" id="field-estado" style="display:none">
-        <label>Estado del conjunto</label>
-        <select id="f-activo">
-          <option value="true">Activo</option>
-          <option value="false">Desactivado</option>
+        <label>Estado operativo del conjunto</label>
+        <select id="f-estado">
+          <option value="activo">🟢 Activo (Operando normalmente)</option>
+          <option value="suspendido">🔴 Suspendido (Acceso bloqueado)</option>
+          <option value="inactivo">⚪ Inactivo (Desactivado)</option>
         </select>
+      </div>
+      <div class="form-field" id="field-motivo-suspension" style="display:none">
+        <label>Motivo de suspensión</label>
+        <input type="text" id="f-motivo-suspension" placeholder="Ej. Mantenimiento general, mora de servicio, etc.">
       </div>
 
       <div class="form-field">
-        <label>Imagen del conjunto</label>
+        <label>Logo / Imagen del conjunto</label>
         <input type="file" id="f-imagen" accept="image/*">
       </div>
       <div id="admin-fields">
-        <div class="form-divider">Administrador del conjunto</div>
+        <div class="form-divider">Administrador Principal del Conjunto</div>
         <div class="form-field">
-          <label>Email del admin *</label>
+          <label>Email del Administrador Principal *</label>
           <input type="email" id="f-admin-email" placeholder="admin@conjunto.com">
         </div>
         <div class="form-field">
-          <label>Nombre del admin</label>
+          <label>Nombre del Administrador</label>
           <input type="text" id="f-admin-nombre" placeholder="Nombre completo">
         </div>
         <div class="form-field">
           <label>Contraseña inicial</label>
           <input type="text" id="f-admin-pwd" placeholder="123456 (por defecto)">
+          <small>Mínimo 6 caracteres</small>
         </div>
       </div>
       <div id="admin-crud-section" style="display:none; margin-top: 20px;">

@@ -56,7 +56,7 @@ module.exports = {
   MAX_PAGE_SIZE:     100,
 
   // ─── COLOR POR DEFECTO ─────────────────────────────────────────────────────
-  DEFAULT_ACCENT_COLOR: '#1a1a2e',
+  DEFAULT_ACCENT_COLOR: '#2563eb',
 
   // ─── EMPRESAS DOMICILIO PRECONFIGURADAS ────────────────────────────────────
   DEFAULT_DELIVERY_COMPANIES: [

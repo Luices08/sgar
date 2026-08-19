@@ -464,6 +464,86 @@
 .vehicle-check svg { display: none; color: #000; }
 .vehicle-item.selected .vehicle-check svg { display: block; }
 
+/* ── Formulario de Vehículo Temporal / Otro Vehículo ── */
+.facial-other-vehicle-box {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.facial-other-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px 0;
+}
+
+.facial-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.facial-dark-input, .facial-dark-select {
+  width: 100%;
+  height: 42px;
+  background: #12181e;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 13.5px;
+  color: #ffffff;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.facial-dark-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  padding-right: 28px;
+}
+
+.facial-dark-select option {
+  background: #161e26;
+  color: #fff;
+}
+
+.facial-dark-input:focus, .facial-dark-select:focus {
+  border-color: var(--acento, #3b82f6);
+  background: #151d26;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.facial-dark-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12.5px;
+}
+
+.facial-dark-input.placa-field {
+  font-family: 'Courier New', monospace;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    TOAST DE ÉXITO FACIAL
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -496,15 +576,10 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   BOTÓN FACIAL en pantalla principal
+   BOTÓN FACIAL en pantalla principal — usa el estilo unificado de porteria.css
+   (antes tenía un tema oscuro propio; se removió para que las 3 tarjetas de
+   acción luzcan consistentes, como en el diseño de referencia)
    ══════════════════════════════════════════════════════════════════════════════ */
-
-.btn-facial {
-  background: linear-gradient(135deg, #0d2010 0%, #1a3a20 100%);
-  border: 1.5px solid rgba(34,197,94,0.3);
-  color: #4ade80;
-}
-.btn-facial:hover { border-color: #4ade80; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    INDICADOR DE CARGA FACIAL — modelo AI

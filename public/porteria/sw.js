@@ -4,13 +4,9 @@
    ──────────────────────────────────────────────────────────────────────────── */
 'use strict';
 
-const CACHE_NAME    = 'sgar-porteria-v1';
+const CACHE_NAME    = 'sgar-porteria-v3';
 const STATIC_ASSETS = [
   '/porteria',
-  '/static/porteria/css/porteria.css',
-  '/static/porteria/js/db.js',
-  '/static/porteria/js/api.js',
-  '/static/porteria/js/porteria.js',
   'https://unpkg.com/dexie@3.2.4/dist/dexie.min.js',
 ];
 
@@ -40,13 +36,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Rutas de API: Network-First (si falla, error claro — Dexie maneja el dato)
-  if (url.pathname.startsWith('/api/')) {
+  // Rutas de API y scripts dinámicos: Network-First
+  if (url.pathname.startsWith('/api/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     event.respondWith(networkFirst(event.request));
     return;
   }
 
-  // Assets estáticos: Cache-First
+  // Otros assets estáticos: Cache-First
   event.respondWith(cacheFirst(event.request));
 });
 

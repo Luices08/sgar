@@ -69,26 +69,33 @@ const login = asyncHandler(async (req, res) => {
     sameSite: 'lax',
   });
 
-  // Determinar configuración de tenant para el frontend
+  // Determinar configuración de tenant y validar estado operativo
   let tenantConfig = null;
-  if (user.tenant_id) {
-    const Tenant = require('../models/Tenant');
-    const tenant = await Tenant.findById(user.tenant_id)
-                               .select('nombre colorAcento imagenUrl tenant_id deliveryEmpresas activo');
-                               
-    if (!tenant || !tenant.activo) {
-      return error(res, 'Conjunto desactivado', 403);
+  if (user.rol !== ROLES.ADMIN_CONTROL) {
+    if (!user.tenant_id) {
+      return error(res, 'Usuario sin conjunto residencial asignado', 403);
     }
 
-    if (tenant) {
-      tenantConfig = {
-        tenant_id:        tenant.tenant_id,
-        nombre:           tenant.nombre,
-        colorAcento:      tenant.colorAcento,
-        imagenUrl:        tenant.imagenUrl,
-        deliveryEmpresas: tenant.deliveryEmpresas,
-      };
+    const Tenant = require('../models/Tenant');
+    const tenant = await Tenant.findById(user.tenant_id)
+                               .select('nombre colorAcento imagenUrl tenant_id deliveryEmpresas estado activo eliminado motivoSuspension');
+
+    if (!tenant || tenant.eliminado) {
+      return error(res, 'El conjunto residencial asignado no existe o ha sido archivado', 403);
     }
+
+    if (tenant.estado === 'suspendido' || !tenant.activo || tenant.estado !== 'activo') {
+      const motivo = tenant.motivoSuspension ? ` (${tenant.motivoSuspension})` : '';
+      return error(res, `El conjunto residencial '${tenant.nombre}' se encuentra ${tenant.estado || 'inactivo'}${motivo}. Acceso restringido.`, 403);
+    }
+
+    tenantConfig = {
+      tenant_id:        tenant.tenant_id,
+      nombre:           tenant.nombre,
+      colorAcento:      tenant.colorAcento,
+      imagenUrl:        tenant.imagenUrl,
+      deliveryEmpresas: tenant.deliveryEmpresas,
+    };
   }
 
   return ok(res, {

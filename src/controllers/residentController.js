@@ -25,19 +25,58 @@ const list = asyncHandler(async (req, res) => {
     filter.$or = [{ nombre: re }, { cedula: re }, { apartamento: re }];
   }
 
-  const [residents, total] = await Promise.all([
+  const [residents, total, openVisits] = await Promise.all([
     Resident.find(filter).sort({ apartamento: 1, nombre: 1 }).skip(skip).limit(limit).lean(),
     Resident.countDocuments(filter),
+    Visit.find({
+      tenant_id:  req.tenantId,
+      tipo:       VISIT_TYPES.RESIDENTE,
+      horaSalida: null,
+      eliminado:  false,
+    }).select('resident_id horaIngreso metodoIdentificacion celador_nombre placa').lean(),
   ]);
 
-  return paginated(res, residents, total, page, limit);
+  const openMap = new Map();
+  for (const v of openVisits) {
+    if (v.resident_id) {
+      openMap.set(v.resident_id.toString(), v);
+    }
+  }
+
+  const residentsWithStatus = residents.map(r => {
+    const activeVisit = openMap.get(r._id.toString()) || null;
+    return {
+      ...r,
+      dentro:        !!activeVisit,
+      estadoAcceso:  activeVisit ? 'dentro' : 'fuera',
+      ingresoActivo: activeVisit,
+    };
+  });
+
+  return paginated(res, residentsWithStatus, total, page, limit);
 });
 
 // ─── OBTENER UN RESIDENTE ─────────────────────────────────────────────────────
 const getOne = asyncHandler(async (req, res) => {
-  const resident = await Resident.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+  const resident = await Resident.findOne({ _id: req.params.id, tenant_id: req.tenantId }).lean();
   if (!resident) return error(res, 'Residente no encontrado', 404);
-  return ok(res, { resident });
+
+  const openVisit = await Visit.findOne({
+    tenant_id:   req.tenantId,
+    resident_id: resident._id,
+    tipo:        VISIT_TYPES.RESIDENTE,
+    horaSalida:  null,
+    eliminado:   false,
+  }).sort({ horaIngreso: -1 }).lean();
+
+  return ok(res, {
+    resident: {
+      ...resident,
+      dentro:       !!openVisit,
+      estadoAcceso: openVisit ? 'dentro' : 'fuera',
+      openVisit:    openVisit || null,
+    },
+  });
 });
 
 // ─── CREAR RESIDENTE ──────────────────────────────────────────────────────────
@@ -47,15 +86,28 @@ const create = asyncHandler(async (req, res) => {
     return error(res, 'nombre y apartamento son requeridos', 400);
   }
 
+  const cedTrim = cedula && String(cedula).trim() ? String(cedula).trim() : null;
+
+  // Validar unicidad de la cédula en el conjunto
+  if (cedTrim) {
+    const existingResident = await Resident.findOne({
+      tenant_id: req.tenantId,
+      cedula: { $regex: new RegExp(`^${cedTrim.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
+    });
+    if (existingResident) {
+      return error(res, `Ya existe un residente registrado con la cédula ${cedTrim} (${existingResident.nombre} - Apto ${existingResident.apartamento})`, 409);
+    }
+  }
+
   const fotoUrl = req.file ? `/uploads/residentes/${req.file.filename}` : null;
 
   const resident = await Resident.create({
     tenant_id:   req.tenantId,
-    nombre,
-    cedula,
-    apartamento: apartamento.toUpperCase(),
-    telefono,
-    email,
+    nombre:      nombre.trim(),
+    cedula:      cedTrim || undefined,
+    apartamento: apartamento.toUpperCase().trim(),
+    telefono:    telefono ? telefono.trim() : undefined,
+    email:       email ? email.toLowerCase().trim() : undefined,
     fotoUrl,
   });
 
@@ -64,13 +116,14 @@ const create = asyncHandler(async (req, res) => {
     try {
       const hashed = await bcrypt.hash(req.body.password, 12);
       const user = await User.create({
-        nombre:    nombre,
-        email:     email.toLowerCase().trim(),
-        password:  hashed,
-        rol:       ROLES.RESIDENTE,
-        tenant_id: req.tenantId,
+        nombre:      resident.nombre,
+        email:       email.toLowerCase().trim(),
+        password:    hashed,
+        rol:         ROLES.RESIDENTE,
+        tenant_id:   req.tenantId,
         resident_id: resident._id,
-        activo:    true,
+        cedula:      cedTrim || undefined,
+        activo:      true,
       });
       resident.user_id = user._id;
       await resident.save();
@@ -103,13 +156,27 @@ const updateFaceId = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const { nombre, cedula, apartamento, telefono, email, activo, password } = req.body;
   const updateData = {};
-  if (nombre      !== undefined) updateData.nombre      = nombre;
-  if (cedula      !== undefined) updateData.cedula      = cedula;
-  if (apartamento !== undefined) updateData.apartamento = apartamento.toUpperCase();
-  if (telefono    !== undefined) updateData.telefono    = telefono;
-  if (email       !== undefined) updateData.email       = email;
+  if (nombre      !== undefined) updateData.nombre      = nombre.trim();
+  if (apartamento !== undefined) updateData.apartamento = apartamento.toUpperCase().trim();
+  if (telefono    !== undefined) updateData.telefono    = telefono.trim();
+  if (email       !== undefined) updateData.email       = email ? email.toLowerCase().trim() : '';
   if (activo      !== undefined) updateData.activo      = activo;
   if (req.file)                  updateData.fotoUrl     = `/uploads/residentes/${req.file.filename}`;
+
+  if (cedula !== undefined) {
+    const cedTrim = cedula && String(cedula).trim() ? String(cedula).trim() : null;
+    if (cedTrim) {
+      const existingResident = await Resident.findOne({
+        _id: { $ne: req.params.id },
+        tenant_id: req.tenantId,
+        cedula: { $regex: new RegExp(`^${cedTrim.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
+      });
+      if (existingResident) {
+        return error(res, `La cédula ${cedTrim} ya pertenece a otro residente (${existingResident.nombre} - Apto ${existingResident.apartamento})`, 409);
+      }
+    }
+    updateData.cedula = cedTrim || '';
+  }
 
   const resident = await Resident.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.tenantId },
@@ -122,24 +189,34 @@ const update = asyncHandler(async (req, res) => {
   // Si envían password y el residente tiene usuario, actualizar la contraseña
   if (password && password.length >= 6 && resident.user_id) {
     const hashed = await bcrypt.hash(password, 12);
-    await User.findByIdAndUpdate(resident.user_id, { password: hashed, email: email || resident.email });
+    await User.findByIdAndUpdate(resident.user_id, {
+      password: hashed,
+      email: email || resident.email,
+      ...(updateData.cedula !== undefined && { cedula: updateData.cedula || undefined }),
+    });
   } else if (password && password.length >= 6 && !resident.user_id && resident.email) {
     // Si envían password, no tenía usuario y sí tiene email, se lo creamos
     const hashed = await bcrypt.hash(password, 12);
     const user = await User.create({
-      nombre:    resident.nombre,
-      email:     resident.email.toLowerCase().trim(),
-      password:  hashed,
-      rol:       ROLES.RESIDENTE,
-      tenant_id: req.tenantId,
+      nombre:      resident.nombre,
+      email:       resident.email.toLowerCase().trim(),
+      password:    hashed,
+      rol:         ROLES.RESIDENTE,
+      tenant_id:   req.tenantId,
       resident_id: resident._id,
-      activo:    true,
+      cedula:      resident.cedula || undefined,
+      activo:      true,
     });
     resident.user_id = user._id;
     await resident.save();
-  } else if (email && resident.user_id) {
-    // Si cambia el email, sincronizar con el User
-    await User.findByIdAndUpdate(resident.user_id, { email: email.toLowerCase().trim() });
+  } else if (resident.user_id) {
+    // Sincronizar email y cédula con el User
+    const userUpdates = {};
+    if (email) userUpdates.email = email.toLowerCase().trim();
+    if (updateData.cedula !== undefined) userUpdates.cedula = updateData.cedula || undefined;
+    if (Object.keys(userUpdates).length > 0) {
+      await User.findByIdAndUpdate(resident.user_id, userUpdates);
+    }
   }
 
   return ok(res, { resident }, 'Residente actualizado');
@@ -160,13 +237,14 @@ const createAccount = asyncHandler(async (req, res) => {
   const hashed = await bcrypt.hash(providedPwd, 12);
 
   const user = await User.create({
-    nombre:    resident.nombre,
-    email:     resident.email,
-    password:  hashed,
-    rol:       ROLES.RESIDENTE,
-    tenant_id: resident.tenant_id,
+    nombre:      resident.nombre,
+    email:       resident.email,
+    password:    hashed,
+    rol:         ROLES.RESIDENTE,
+    tenant_id:   resident.tenant_id,
     resident_id: resident._id,
-    activo:    true,
+    cedula:      resident.cedula || undefined,
+    activo:      true,
   });
 
   resident.user_id = user._id;
@@ -193,11 +271,22 @@ const bulkImport = asyncHandler(async (req, res) => {
       results.errors.push({ row, error: `Campos faltantes: ${missing.join(', ')}` });
       continue;
     }
+    const cedTrim = row.cedula && String(row.cedula).trim() ? String(row.cedula).trim() : null;
+    if (cedTrim) {
+      const existing = await Resident.findOne({
+        tenant_id: req.tenantId,
+        cedula: { $regex: new RegExp(`^${cedTrim.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
+      });
+      if (existing) {
+        results.errors.push({ row, error: `La cédula ${cedTrim} ya pertenece a otro residente (${existing.nombre} - Apto ${existing.apartamento})` });
+        continue;
+      }
+    }
     try {
       await Resident.create({
         tenant_id:   req.tenantId,
         nombre:      row.nombre,
-        cedula:      row.cedula,
+        cedula:      cedTrim || undefined,
         apartamento: row.apartamento.toUpperCase(),
         telefono:    row.telefono,
         email:       row.email,
@@ -220,11 +309,14 @@ const getOpenVisit = asyncHandler(async (req, res) => {
     resident_id: req.params.id,
     tipo:        VISIT_TYPES.RESIDENTE,
     horaSalida:  null,
+    eliminado:   false,
   })
     .sort({ horaIngreso: -1 })
     .lean();
 
-  if (!visit) return ok(res, { visit: null, vehicleLog: null }, 'Sin ingreso abierto');
+  if (!visit) {
+    return ok(res, { visit: null, vehicleLog: null, dentro: false, estadoAcceso: 'fuera' }, 'Sin ingreso abierto');
+  }
 
   const vehicleLog = await VehicleAccessLog.findOne({
     tenant_id:  req.tenantId,
@@ -232,7 +324,7 @@ const getOpenVisit = asyncHandler(async (req, res) => {
     horaSalida: null,
   }).lean();
 
-  return ok(res, { visit, vehicleLog }, 'Ingreso abierto encontrado');
+  return ok(res, { visit, vehicleLog, dentro: true, estadoAcceso: 'dentro' }, 'Ingreso abierto encontrado');
 });
 
 // ─── ELIMINAR RESIDENTE ───────────────────────────────────────────────────────

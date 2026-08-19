@@ -106,20 +106,26 @@ async function loadResidents() {
     return;
   }
 
-  tbody.innerHTML = residents.map(r => `
+  tbody.innerHTML = residents.map(r => {
+    const presenciaBadge = r.dentro
+      ? '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:600">🟢 Dentro</span>'
+      : '<span class="badge" style="background:#f1f5f9;color:#64748b">⚪ Fuera</span>';
+
+    return `
     <tr>
       <td>${r.nombre}</td>
       <td><strong>${r.apartamento}</strong></td>
       <td>${r.cedula || '—'}</td>
       <td>${r.email || '—'}</td>
-      <td>${r.telefono || '—'}</td>
+      <td>${presenciaBadge}</td>
       <td>${SGAR.activeBadge(r.activo)}</td>
       <td>
         <button class="btn-secondary btn-sm" onclick="openEdit(${JSON.stringify(r).replace(/"/g, '&quot;')})">Editar</button>
         <button class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f; margin-left: 5px;" onclick="deleteResident('${r._id}')">Eliminar</button>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   SGAR.renderPagination('pagination', pagination, (p) => { currentPage = p; loadResidents(); });
 }
@@ -334,12 +340,7 @@ async function submitResident(e) {
   e.preventDefault();
   const editId = document.getElementById('r-edit-id').value;
 
-  // Para nuevo residente se requiere captura facial
   SGAR.clearFormError('r-form-error');
-  if (!editId && !capturedDescriptor) {
-    SGAR.showFormError('r-form-error', 'Capture el rostro del residente con la cámara antes de guardar.');
-    return;
-  }
 
   const fd = new FormData();
   fd.append('nombre', document.getElementById('r-nombre').value.trim());

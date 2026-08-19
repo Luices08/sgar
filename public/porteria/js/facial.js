@@ -232,16 +232,22 @@ const facialModule = (() => {
       let openVisitId = null;
       let openVehicleLogId = null;
 
-      try {
-        const visitCheck = await porteriaAPI.request(
-          `/api/residents/${res.data.resident._id}/open-visit`
-        );
-        if (visitCheck?.success && visitCheck.data?.visit) {
-          actionType       = 'salida';
-          openVisitId      = visitCheck.data.visit._id;
-          openVehicleLogId = visitCheck.data.vehicleLog?._id || null;
-        }
-      } catch (_) { /* sin ingreso abierto */ }
+      if (res.data.openVisit) {
+        actionType       = 'salida';
+        openVisitId      = res.data.openVisit._id;
+        openVehicleLogId = res.data.openVehicleLog?._id || null;
+      } else {
+        try {
+          const visitCheck = await porteriaAPI.request(
+            `/api/residents/${res.data.resident._id}/open-visit`
+          );
+          if (visitCheck?.success && visitCheck.data?.visit) {
+            actionType       = 'salida';
+            openVisitId      = visitCheck.data.visit._id;
+            openVehicleLogId = visitCheck.data.vehicleLog?._id || null;
+          }
+        } catch (_) { /* sin ingreso abierto */ }
+      }
 
       STATE.actionType       = actionType;
       STATE.openVisitId      = openVisitId;
@@ -389,13 +395,11 @@ const facialModule = (() => {
 
     // Opción "Otro vehículo temporal"
     html += `
-      <div class="vehicle-item ${STATE.selectedVehicle && STATE.selectedVehicle._id === 'otro' ? 'selected' : ''}" data-id="otro" onclick="facialModule._selectVehicle('otro')" style="border: 1px dashed #555; background: transparent;">
-        <div style="width:40px;height:40px;background:#2a2a2a;border-radius:4px;margin-right:10px;display:flex;align-items:center;justify-content:center;color:#888;">+</div>
+      <div class="vehicle-item ${STATE.selectedVehicle && STATE.selectedVehicle._id === 'otro' ? 'selected' : ''}" data-id="otro" onclick="facialModule._selectVehicle('otro')" style="border: 1.5px dashed rgba(255,255,255,0.22); background: rgba(255,255,255,0.02);">
+        <div style="width:40px;height:40px;background:rgba(255,255,255,0.08);border-radius:8px;margin-right:10px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.85);font-size:20px;font-weight:300;">+</div>
         <div style="flex:1; text-align:left;">
-          <div class="vehicle-plate">Otro vehículo</div>
-          <div class="vehicle-desc">
-            <div class="vehicle-desc-name">Ingresar manualmente</div>
-          </div>
+          <div style="font-size:14px; font-weight:700; color:#ffffff;">Otro vehículo</div>
+          <div style="font-size:12px; color:rgba(255,255,255,0.45); margin-top:2px;">Ingresar datos manualmente</div>
         </div>
         <div class="vehicle-check">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
@@ -461,7 +465,7 @@ const facialModule = (() => {
           body: JSON.stringify(body),
         });
       } else {
-        const body = { horaSalida: new Date().toISOString() };
+        const body = { horaSalida: new Date().toISOString(), metodoSalida: 'facial' };
         if (STATE.selectedMode === 'vehiculo' && STATE.openVehicleLogId) {
           body.vehicleLogId = STATE.openVehicleLogId;
         }
@@ -475,10 +479,12 @@ const facialModule = (() => {
         // Tarea 3: Guardar el registro en Dexie para que aparezca en el historial
         if (res.data?.visit) {
           const vData = res.data.visit;
+          const user = JSON.parse(localStorage.getItem('sgar_user') || '{}');
           // Guardarlo en DB local y marcarlo sincronizado
           const localId = vData.localId || dbVisitas.newLocalId();
           const saved = await dbVisitas.save({
             ...vData,
+            tenant_id: vData.tenant_id || user.tenant_id,
             localId,
             placa: STATE.selectedVehicle && STATE.selectedVehicle._id === 'otro' 
                      ? document.getElementById('v-otro-placa').value.trim().toUpperCase()

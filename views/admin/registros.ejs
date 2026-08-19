@@ -9,12 +9,20 @@
       <p class="page-subtitle" id="sub-count">Cargando…</p>
     </div>
     <div class="header-actions">
+      <input type="search" id="filter-search" class="search-input" placeholder="Buscar nombre, apto, placa…" style="max-width:200px;">
       <input type="date" id="filter-date" class="date-input">
       <select id="filter-tipo" class="select-input">
         <option value="">Todos los tipos</option>
+        <option value="residente">Residentes</option>
         <option value="visita">Visitas</option>
         <option value="domicilio">Domicilios</option>
         <option value="vehiculo">Vehículos</option>
+        <option value="tecnico_mantenimiento">Técnicos</option>
+      </select>
+      <select id="filter-estado" class="select-input">
+        <option value="">Todos los estados</option>
+        <option value="dentro">🟢 Dentro</option>
+        <option value="salida">⚪ Salida registrada</option>
       </select>
     </div>
   </header>
@@ -23,8 +31,8 @@
     <table class="data-table" id="visits-table">
       <thead>
         <tr>
-          <th>Hora</th><th>Tipo</th><th>Nombre / Empresa</th>
-          <th>Apartamento</th><th>Celador</th><th>Método</th><th>Acciones</th>
+          <th>Ingreso</th><th>Tipo</th><th>Nombre / Persona</th>
+          <th>Apartamento</th><th>Estado</th><th>Método</th><th>Acciones</th>
         </tr>
       </thead>
       <tbody id="visits-tbody">

@@ -31,15 +31,15 @@ const SGAR = (() => {
         document.getElementById('nav-admincontrol').style.display = 'none';
         document.getElementById('nav-adminconjunto').style.display = '';
         document.getElementById('btn-exit-impersonate').style.display = 'flex';
-        color = (tenant && tenant.colorAcento) ? tenant.colorAcento : '#1a1a2e';
+        color = (tenant && tenant.colorAcento) ? tenant.colorAcento : '#2563eb';
       } else {
         // Normal adminControl
         document.getElementById('nav-admincontrol').style.display = '';
         document.getElementById('nav-adminconjunto').style.display = 'none';
-        color = getComputedStyle(document.documentElement).getPropertyValue('--acento').trim() || '#1a1a2e';
+        color = getComputedStyle(document.documentElement).getPropertyValue('--acento').trim() || '#2563eb';
       }
     } else {
-      color = (tenant && tenant.colorAcento) ? tenant.colorAcento : '#1a1a2e';
+      color = (tenant && tenant.colorAcento) ? tenant.colorAcento : '#2563eb';
     }
     document.documentElement.style.setProperty('--acento', color);
   }

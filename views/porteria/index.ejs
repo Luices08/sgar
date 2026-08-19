@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0a1a14">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="icon" type="image/svg+xml" href="/static/shared/img/app-icon.svg">
   <title>Portería — SGAR</title>
   <link rel="manifest" href="/static/porteria/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,22 +17,12 @@
 </head>
 <body>
 
-
 <!-- ─── PANTALLA PRINCIPAL (ACCIÓN) ──────────────────────────────────────────── -->
 <div id="screen-main" class="screen active">
   <!-- Header -->
   <header class="app-header">
     <div class="header-left">
-      <div class="conn-indicator" id="conn-indicator" title="Estado de conexión">
-        <span class="conn-dot" id="conn-dot"></span>
-        <span class="conn-label" id="conn-label">Online</span>
-      </div>
-    </div>
-    <div class="header-center">
-      <span id="conjunto-nombre">Portería</span>
-    </div>
-    <div class="header-right">
-      <button class="icon-btn" id="btn-menu" title="Menú">
+      <button class="icon-btn" id="btn-menu" title="Menú lateral">
         <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2">
           <line x1="3" y1="6" x2="21" y2="6"/>
           <line x1="3" y1="12" x2="21" y2="12"/>
@@ -39,58 +30,118 @@
         </svg>
       </button>
     </div>
+    <div class="header-center">
+      <span id="conjunto-nombre">Portería</span>
+    </div>
+    <div class="header-right">
+      <div class="conn-indicator" id="conn-indicator" title="Estado de conexión">
+        <span class="conn-dot" id="conn-dot"></span>
+        <span class="conn-label" id="conn-label">Online</span>
+      </div>
+    </div>
   </header>
 
   <!-- 3 Botones principales -->
-  <main class="action-main">
+  <main class="action-main" style="padding-top: 24px;">
+
     <div class="action-grid">
+      <!-- 1. Registrar Residente -->
       <div class="action-group">
         <button class="action-btn btn-facial" id="btn-registro-residente">
-          <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" fill="none" stroke-width="1.5">
-            <path d="M9 3H5a2 2 0 0 0-2 2v4"/>
-            <path d="M15 3h4a2 2 0 0 1 2 2v4"/>
-            <path d="M9 21H5a2 2 0 0 1-2-2v-4"/>
-            <path d="M15 21h4a2 2 0 0 0 2-2v-4"/>
-            <circle cx="12" cy="10" r="3"/>
-            <path d="M7 21v-1a5 5 0 0 1 10 0v1"/>
-          </svg>
-          <span>Registro de<br>Residente</span>
+          <span class="action-btn-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+              <path d="M9 3H5a2 2 0 0 0-2 2v4"/>
+              <path d="M15 3h4a2 2 0 0 1 2 2v4"/>
+              <path d="M9 21H5a2 2 0 0 1-2-2v-4"/>
+              <path d="M15 21h4a2 2 0 0 0 2-2v-4"/>
+              <circle cx="12" cy="10" r="3"/>
+              <path d="M7 21v-1a5 5 0 0 1 10 0v1"/>
+            </svg>
+          </span>
+          <span class="action-btn-text">
+            <strong>Registrar Residente</strong>
+            <small>Registra la entrada o salida de un residente.</small>
+          </span>
+          <span class="action-btn-arrow">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
         </button>
         <button class="action-btn-offline" id="btn-manual-residente" title="Registro Manual (Offline)">
-          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         </button>
       </div>
 
+      <!-- 2. Registrar ENTRADA de Visitante -->
       <div class="action-group">
         <button class="action-btn btn-visita" id="btn-registro-visita">
-          <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" fill="none" stroke-width="1.5">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-          <span>Registro de<br>Visita</span>
+          <span class="pending-invitations-badge" id="badge-invitaciones-pendientes" style="display:none">0 pendientes</span>
+          <span class="action-btn-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <polyline points="17 11 19 13 23 9"/>
+            </svg>
+          </span>
+          <span class="action-btn-text">
+            <strong>Entrada de Visitante</strong>
+            <small>Verificar código o registrar ingreso.</small>
+          </span>
+          <span class="action-btn-arrow">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
         </button>
         <button class="action-btn-offline" id="btn-manual-visita" title="Registro Manual (Offline)">
-          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         </button>
       </div>
 
+      <!-- 3. Registrar SALIDA de Visitante -->
+      <div class="action-group">
+        <button class="action-btn btn-salida" id="btn-salida-visita">
+          <span class="active-visitors-badge" id="badge-visitantes-dentro" style="display:none">0 adentro</span>
+          <span class="action-btn-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </span>
+          <span class="action-btn-text">
+            <strong>Salida de Visitante</strong>
+            <small>Ver y registrar salida de visitantes dentro.</small>
+          </span>
+          <span class="action-btn-arrow">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
+        </button>
+      </div>
+
+      <!-- 4. Registrar Domicilio -->
       <div class="action-group">
         <button class="action-btn btn-domicilio" id="btn-registro-domicilio">
-          <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" fill="none" stroke-width="1.5">
-            <rect x="1" y="3" width="15" height="13"/>
-            <path d="M16 8h4l3 3v5h-7V8z"/>
-            <circle cx="5.5" cy="18.5" r="2.5"/>
-            <circle cx="18.5" cy="18.5" r="2.5"/>
-          </svg>
-          <span>Registro de<br>Domicilio</span>
+          <span class="action-btn-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+              <rect x="1" y="3" width="15" height="13"/>
+              <path d="M16 8h4l3 3v5h-7V8z"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/>
+              <circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
+          </span>
+          <span class="action-btn-text">
+            <strong>Registrar Domicilio</strong>
+            <small>Registra la entrada de domicilios y entregas.</small>
+          </span>
+          <span class="action-btn-arrow">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
         </button>
         <button class="action-btn-offline" id="btn-manual-domicilio" title="Registro Manual (Offline)">
-          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- Últimos 3 registros del turno -->
+    <!-- Últimos 10 registros del turno -->
     <section class="recent-strip">
       <div class="recent-header">
         <span class="recent-title">Últimos registros</span>
@@ -117,12 +168,24 @@
         <polyline points="15 18 9 12 15 6"/>
       </svg>
     </button>
-    <div class="header-center">Historial del turno</div>
+    <div class="header-center" id="historial-title">Historial de Accesos</div>
     <div class="header-right"></div>
   </header>
+
+  <!-- Selector de Pestañas: Hoy vs Completo -->
+  <div style="display:flex; background:var(--white); border-bottom:1px solid var(--border); padding:8px 14px; gap:8px;">
+    <button id="tab-historial-hoy" style="flex:1; padding:8px 12px; border-radius:var(--radius); border:none; font-weight:600; font-size:14px; cursor:pointer; background:var(--acento); color:#fff; transition:all .15s;">Historial de hoy</button>
+    <button id="tab-historial-completo" style="flex:1; padding:8px 12px; border-radius:var(--radius); border:none; font-weight:600; font-size:14px; cursor:pointer; background:var(--bg); color:var(--text-muted); transition:all .15s;">Historial completo</button>
+  </div>
+
   <main class="list-main">
     <div id="historial-list">
       <div class="empty-recent" style="padding:40px 16px">Sin registros aún</div>
+    </div>
+    <div id="historial-pagination" style="display:none; padding:16px 14px 30px; text-align:center;">
+      <button id="btn-cargar-mas-historial" class="btn-action-secondary" style="width:100%; padding:12px 16px; font-weight:600;">
+        Cargar más registros (20)
+      </button>
     </div>
   </main>
 </div>
@@ -209,6 +272,44 @@
   </main>
 </div>
 
+<!-- ─── PANTALLA SALIDAS DE VISITANTES ──────────────────────────────────────── -->
+<div id="screen-salidas-visitas" class="screen">
+  <header class="app-header">
+    <button class="icon-btn" id="btn-back-salidas-visitas">
+      <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <div class="header-center">Salida de Visitantes</div>
+    <div class="header-right"></div>
+  </header>
+
+  <main class="list-main">
+    <div class="recent-strip">
+      <div class="recent-header">
+        <span class="recent-title">Visitantes en el Conjunto</span>
+        <button class="link-btn" id="btn-refresh-salidas" title="Actualizar">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Actualizar
+        </button>
+      </div>
+      <div style="padding: 12px 14px 6px;">
+        <div style="position:relative;">
+          <input
+            type="text"
+            id="search-salidas"
+            placeholder="Filtrar por nombre, cédula o apto…"
+            style="width:100%; padding:9px 14px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; outline:none; background:var(--white); transition:border-color .15s;"
+          >
+        </div>
+      </div>
+      <div id="salidas-cards-container" style="padding: 0 14px 14px;">
+        <!-- Tarjetas dinámicas de visitantes adentro -->
+      </div>
+    </div>
+  </main>
+</div>
+
 <!-- ─── SIDE MENU ─────────────────────────────────────────────────────────────── -->
 <div class="menu-overlay" id="menu-overlay"></div>
 <nav class="side-menu" id="side-menu">
@@ -228,7 +329,7 @@
       <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
         <polyline points="14 2 14 8 20 8"/>
-      </svg>Historial del turno</button></li>
+      </svg>Historial de accesos</button></li>
     <li><button class="menu-item" onclick="navigate('analiticas')">
       <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2">
         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
@@ -339,16 +440,23 @@
     <!-- Inline Vehicle Selection -->
     <div id="inline-vehicle-section" style="display: none; margin-top: 15px;">
       <div class="vehicle-list" id="facial-vehicle-list"></div>
-      <div id="facial-vehicle-other-form" style="display:none; padding: 10px 0; border-top: 1px solid #333; margin-top: 10px;">
-        <p style="font-size: 0.9rem; margin-bottom: 8px; color: #aaa;">Ingresa datos del vehículo temporal:</p>
-        <select id="v-otro-tipo" class="search-input" style="width: 100%; margin-bottom: 8px; background: #2a2a2a; color: white; border: 1px solid #444;">
-          <option value="Carro">Carro</option>
-          <option value="Motocicleta">Motocicleta</option>
-          <option value="Otro">Otro</option>
-        </select>
-        <input type="text" id="v-otro-placa" placeholder="Placa (Obligatorio Carro/Moto)" class="search-input" style="width: 100%; margin-bottom: 8px; text-transform: uppercase;">
-        <input type="text" id="v-otro-marca" placeholder="Marca (Ej. Toyota)" class="search-input" style="width: 100%; margin-bottom: 8px;">
-        <input type="text" id="v-otro-modelo" placeholder="Modelo (Ej. Corolla)" class="search-input" style="width: 100%; margin-bottom: 8px;">
+      <div id="facial-vehicle-other-form" class="facial-other-vehicle-box" style="display:none;">
+        <p class="facial-other-title">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Datos del vehículo temporal
+        </p>
+        <div class="facial-input-row">
+          <select id="v-otro-tipo" class="facial-dark-select">
+            <option value="Carro">Carro</option>
+            <option value="Motocicleta">Motocicleta</option>
+            <option value="Otro">Otro</option>
+          </select>
+          <input type="text" id="v-otro-placa" placeholder="PLACA *" class="facial-dark-input placa-field" maxlength="10">
+        </div>
+        <div class="facial-input-row">
+          <input type="text" id="v-otro-marca" placeholder="Marca (Ej. Toyota)" class="facial-dark-input">
+          <input type="text" id="v-otro-modelo" placeholder="Modelo (Ej. Corolla)" class="facial-dark-input">
+        </div>
       </div>
     </div>
 
@@ -362,11 +470,12 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
-<script src="/static/porteria/js/db.js"></script>
-<script src="/static/porteria/js/api.js"></script>
+<script src="/static/porteria/js/db.js?v=3"></script>
+<script src="/static/porteria/js/api.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-<script src="/static/porteria/js/facial.js"></script>
-<script src="/static/porteria/js/porteria.js"></script>
+<script src="/static/porteria/js/facial.js?v=3"></script>
+<script src="/static/shared/js/sgar-poll.js?v=3"></script>
+<script src="/static/porteria/js/porteria.js?v=3"></script>
 
 </body>
 </html>
