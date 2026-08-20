@@ -1,13 +1,13 @@
 'use strict';
 
-const mongoose     = require('mongoose');
-const bcrypt       = require('bcryptjs');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const asyncHandler = require('../utils/asyncHandler');
 const { ok, created, error, paginated } = require('../utils/response');
 const { ROLES, DEFAULT_DELIVERY_COMPANIES } = require('../config/constants');
 
 const Tenant = require('../models/Tenant');
-const User   = require('../models/User');
+const User = require('../models/User');
 
 // Helper para generar slug a partir del nombre
 function slugify(text) {
@@ -24,12 +24,12 @@ function slugify(text) {
 
 // ─── LISTAR TENANTS ───────────────────────────────────────────────────────────
 const list = asyncHandler(async (req, res) => {
-  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, parseInt(req.query.limit) || 20);
-  const skip  = (page - 1) * limit;
+  const skip = (page - 1) * limit;
 
   const filter = {};
-  
+
   // Por defecto solo mostrar no eliminados
   if (req.query.incluirEliminados !== 'true') {
     filter.eliminado = false;
@@ -166,7 +166,7 @@ const create = asyncHandler(async (req, res) => {
   }
 
   let createdTenant = null;
-  let createdAdmin  = null;
+  let createdAdmin = null;
 
   try {
     const imagenUrl = req.file ? `/uploads/conjuntos/${req.file.filename}` : undefined;
@@ -175,16 +175,16 @@ const create = asyncHandler(async (req, res) => {
     createdTenant = await Tenant.create({
       tenant_id,
       nombre,
-      nit:           nit ? nit.trim() : null,
-      direccion:     direccion ? direccion.trim() : null,
-      ciudad:        ciudad ? ciudad.trim() : 'Bogotá',
-      telefono:      telefono ? telefono.trim() : null,
+      nit: nit ? nit.trim() : null,
+      direccion: direccion ? direccion.trim() : null,
+      ciudad: ciudad ? ciudad.trim() : 'Bogotá',
+      telefono: telefono ? telefono.trim() : null,
       emailContacto: emailContacto ? emailContacto.toLowerCase().trim() : null,
-      descripcion:   descripcion ? descripcion.trim() : null,
-      colorAcento:   colorAcento || '#2563eb',
+      descripcion: descripcion ? descripcion.trim() : null,
+      colorAcento: colorAcento || '#2563eb',
       imagenUrl,
-      estado:        'activo',
-      activo:        true,
+      estado: 'activo',
+      activo: true,
       deliveryEmpresas: deliveryEmpresas || DEFAULT_DELIVERY_COMPANIES,
     });
 
@@ -193,13 +193,13 @@ const create = asyncHandler(async (req, res) => {
     const hashedPwd = await bcrypt.hash(rawPwd, 12);
 
     createdAdmin = await User.create({
-      nombre:    adminNombre ? adminNombre.trim() : `Admin ${nombre}`,
-      email:     adminEmail,
-      password:  hashedPwd,
-      rol:       ROLES.ADMIN_CONJUNTO,
+      nombre: adminNombre ? adminNombre.trim() : `Admin ${nombre}`,
+      email: adminEmail,
+      password: hashedPwd,
+      rol: ROLES.ADMIN_CONJUNTO,
       tenant_id: createdTenant._id,
-      cedula:    adminCedula ? adminCedula.trim() : undefined,
-      activo:    true,
+      cedula: adminCedula ? adminCedula.trim() : undefined,
+      activo: true,
     });
 
     // PASO 3 — Asociar Administrador Principal al Tenant
@@ -209,17 +209,17 @@ const create = asyncHandler(async (req, res) => {
     return created(res, {
       tenant: createdTenant,
       adminPrincipal: {
-        id:              createdAdmin._id,
-        nombre:          createdAdmin.nombre,
-        email:           createdAdmin.email,
+        id: createdAdmin._id,
+        nombre: createdAdmin.nombre,
+        email: createdAdmin.email,
         passwordInicial: rawPwd,
       },
     }, 'Conjunto residencial y Administrador Principal creados exitosamente');
 
   } catch (err) {
     // COMPENSACIÓN ATÓMICA en caso de error
-    if (createdAdmin)  await User.findByIdAndDelete(createdAdmin._id).catch(() => {});
-    if (createdTenant) await Tenant.findByIdAndDelete(createdTenant._id).catch(() => {});
+    if (createdAdmin) await User.findByIdAndDelete(createdAdmin._id).catch(() => { });
+    if (createdTenant) await Tenant.findByIdAndDelete(createdTenant._id).catch(() => { });
     throw err;
   }
 });
@@ -246,16 +246,16 @@ const update = asyncHandler(async (req, res) => {
     tenant.nit = null;
   }
 
-  if (nombre           !== undefined) tenant.nombre           = nombre.trim();
-  if (direccion        !== undefined) tenant.direccion        = direccion.trim();
-  if (ciudad           !== undefined) tenant.ciudad           = ciudad.trim();
-  if (telefono         !== undefined) tenant.telefono         = telefono.trim();
-  if (emailContacto    !== undefined) tenant.emailContacto    = emailContacto.toLowerCase().trim();
-  if (descripcion      !== undefined) tenant.descripcion      = descripcion.trim();
-  if (colorAcento      !== undefined) tenant.colorAcento      = colorAcento;
+  if (nombre !== undefined) tenant.nombre = nombre.trim();
+  if (direccion !== undefined) tenant.direccion = direccion.trim();
+  if (ciudad !== undefined) tenant.ciudad = ciudad.trim();
+  if (telefono !== undefined) tenant.telefono = telefono.trim();
+  if (emailContacto !== undefined) tenant.emailContacto = emailContacto.toLowerCase().trim();
+  if (descripcion !== undefined) tenant.descripcion = descripcion.trim();
+  if (colorAcento !== undefined) tenant.colorAcento = colorAcento;
   if (deliveryEmpresas !== undefined) tenant.deliveryEmpresas = deliveryEmpresas;
-  if (adminPrincipal   !== undefined) tenant.adminPrincipal   = adminPrincipal || null;
-  if (req.file)                       tenant.imagenUrl        = `/uploads/conjuntos/${req.file.filename}`;
+  if (adminPrincipal !== undefined) tenant.adminPrincipal = adminPrincipal || null;
+  if (req.file) tenant.imagenUrl = `/uploads/conjuntos/${req.file.filename}`;
 
   // Manejo de estado operativo
   if (estado !== undefined) {
@@ -282,7 +282,7 @@ const update = asyncHandler(async (req, res) => {
 // ─── CAMBIAR ESTADO RÁPIDO (Activar / Suspender / Inactivar) ──────────────────
 const cambiarEstado = asyncHandler(async (req, res) => {
   const { estado, motivoSuspension } = req.body;
-  
+
   if (!['activo', 'inactivo', 'suspendido'].includes(estado)) {
     return error(res, "El estado debe ser 'activo', 'inactivo' o 'suspendido'", 400);
   }
@@ -346,11 +346,11 @@ const remove = asyncHandler(async (req, res) => {
   }
 
   // POR DEFECTO: SOFT-DELETE SEGURO (PRESERVACIÓN DE HISTÓRICO)
-  tenant.activo           = false;
-  tenant.estado           = 'archivado';
-  tenant.eliminado        = true;
+  tenant.activo = false;
+  tenant.estado = 'archivado';
+  tenant.eliminado = true;
   tenant.fechaEliminacion = new Date();
-  tenant.tenant_id        = `${tenant.tenant_id}_archived_${Date.now()}`; // libera el slug original
+  tenant.tenant_id = `${tenant.tenant_id}_archived_${Date.now()}`; // libera el slug original
   if (tenant.nit) tenant.nit = `${tenant.nit}_archived_${Date.now()}`;
   await tenant.save();
 
@@ -362,7 +362,7 @@ const remove = asyncHandler(async (req, res) => {
 
 // ─── MÉTRICAS GLOBALES DE ANALYTICS ───────────────────────────────────────────
 const analytics = asyncHandler(async (req, res) => {
-  const Visit    = require('../models/Visit');
+  const Visit = require('../models/Visit');
   const Resident = require('../models/Resident');
 
   const tenants = await Tenant.find({ eliminado: false }).lean();
@@ -375,12 +375,12 @@ const analytics = asyncHandler(async (req, res) => {
         Resident.countDocuments({ tenant_id: t._id, activo: true }),
       ]);
       return {
-        tenant_id:       t._id,
-        slug:            t.tenant_id,
-        nombre:          t.nombre,
-        colorAcento:     t.colorAcento,
-        estado:          t.estado,
-        activo:          t.activo,
+        tenant_id: t._id,
+        slug: t.tenant_id,
+        nombre: t.nombre,
+        colorAcento: t.colorAcento,
+        estado: t.estado,
+        activo: t.activo,
         ingresos7d,
         totalResidentes,
       };

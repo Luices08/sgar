@@ -16,6 +16,11 @@
         <option value="Motocicleta">Motos</option>
         <option value="Otro">Otros</option>
       </select>
+      <select id="filter-estado-acceso" class="select-input">
+        <option value="">Todos los estados</option>
+        <option value="dentro">Dentro del conjunto</option>
+        <option value="fuera">Fuera del conjunto</option>
+      </select>
       <button class="btn-primary" id="btn-nuevo">
         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo vehículo
@@ -23,28 +28,70 @@
     </div>
   </header>
 
-  <div class="table-wrapper">
-    <table class="data-table" id="vehicles-table">
-      <thead>
-        <tr>
-          <th>Foto</th>
-          <th>Placa</th>
-          <th>Tipo</th>
-          <th>Marca / Modelo</th>
-          <th>Apartamento</th>
-          <th>Responsable Principal</th>
-          <th>Autorizados</th>
-          <th>Registro</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="vehicles-tbody">
-        <tr><td colspan="10" class="table-loading">Cargando…</td></tr>
-      </tbody>
-    </table>
+  <!-- Selector de Pestañas: Registrados vs No Registrados -->
+  <div style="display:flex; background:var(--white); border-bottom:1px solid var(--border); padding:10px 16px; gap:10px; margin-bottom: 16px; border-radius: var(--radius); box-shadow: var(--shadow-xs);">
+    <button id="tab-vehiculos-registrados" style="padding:9px 16px; border-radius:var(--radius); border:none; font-weight:700; font-size:14px; cursor:pointer; background:var(--acento); color:#fff; transition:all .15s; display:flex; align-items:center; gap:6px;">
+      <span>Vehículos Registrados</span>
+      <span id="badge-count-registrados" style="background:rgba(255,255,255,0.25); padding:2px 7px; border-radius:10px; font-size:11px;">—</span>
+    </button>
+    <button id="tab-vehiculos-no-registrados" style="padding:9px 16px; border-radius:var(--radius); border:none; font-weight:700; font-size:14px; cursor:pointer; background:var(--bg); color:var(--text-muted); transition:all .15s; display:flex; align-items:center; gap:6px;">
+      <span>Vehículos Temporales / No Registrados</span>
+      <span id="badge-count-no-registrados" style="background:#fee2e2; color:#b91c1c; padding:2px 7px; border-radius:10px; font-size:11px;">0 adentro</span>
+    </button>
   </div>
-  <div class="pagination" id="pagination"></div>
+
+  <!-- TAB 1: VEHÍCULOS REGISTRADOS -->
+  <div id="wrapper-registrados">
+    <div class="table-wrapper">
+      <table class="data-table" id="vehicles-table">
+        <thead>
+          <tr>
+            <th>Foto</th>
+            <th>Placa</th>
+            <th>Tipo</th>
+            <th>Marca / Modelo</th>
+            <th>Apartamento</th>
+            <th>Responsable Principal</th>
+            <th>Autorizados</th>
+            <th>Registro</th>
+            <th>Ubicación</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="vehicles-tbody">
+          <tr><td colspan="11" class="table-loading">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- TAB 2: VEHÍCULOS NO REGISTRADOS / TEMPORALES -->
+  <div id="wrapper-no-registrados" style="display:none;">
+    <div class="table-wrapper">
+      <table class="data-table" id="unregistered-table">
+        <thead>
+          <tr>
+            <th>Placa</th>
+            <th>Tipo</th>
+            <th>Marca / Modelo</th>
+            <th>Apartamento</th>
+            <th>Conductor / Responsable</th>
+            <th>Tipo Conductor</th>
+            <th>Hora Ingreso</th>
+            <th>Hora Salida</th>
+            <th>Estado</th>
+            <th>Celador</th>
+          </tr>
+        </thead>
+        <tbody id="unregistered-tbody">
+          <tr><td colspan="10" class="table-loading">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination" id="unregistered-pagination"></div>
+  </div>
 </main>
 
 <div class="drawer-overlay" id="drawer-overlay"></div>
@@ -121,7 +168,7 @@
       <div class="form-field">
         <label>Personas Autorizadas adicionales (Cualquier residente del conjunto)</label>
         <div style="margin-bottom: 6px;">
-          <input type="text" id="v-auth-search" placeholder="🔍 Filtrar por nombre, apto o cédula…" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text);">
+          <input type="text" id="v-auth-search" placeholder="Filtrar por nombre, apto o cédula…" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text);">
         </div>
         <div id="v-autorizados-container" style="display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto; padding:8px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg);">
           <span style="color:#94a3b8; font-size:12px;">Cargando residentes del conjunto…</span>

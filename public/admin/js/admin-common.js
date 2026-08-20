@@ -187,6 +187,16 @@ const SGAR = (() => {
   }
 
   /* ── SHOW ERROR ────────────────────────────────────────────────────────────── */
+  function escHtml(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function showFormError(elId, msg) {
     const el = document.getElementById(elId);
     if (!el) return;
@@ -206,6 +216,7 @@ const SGAR = (() => {
     fmtDate, fmtTime, todayISO,
     tipoBadge, activeBadge,
     initLogout, showFormError, clearFormError,
+    escHtml,
   };
 })();
 

@@ -4,7 +4,7 @@
    ──────────────────────────────────────────────────────────────────────────── */
 'use strict';
 
-const CACHE_NAME    = 'sgar-porteria-v3';
+const CACHE_NAME    = 'sgar-porteria-v10';
 const STATIC_ASSETS = [
   '/porteria',
   'https://unpkg.com/dexie@3.2.4/dist/dexie.min.js',

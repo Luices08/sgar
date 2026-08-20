@@ -44,100 +44,146 @@
   <!-- 3 Botones principales -->
   <main class="action-main" style="padding-top: 24px;">
 
-    <div class="action-grid">
-      <!-- 1. Registrar Residente -->
-      <div class="action-group">
-        <button class="action-btn btn-facial" id="btn-registro-residente">
-          <span class="action-btn-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
-              <path d="M9 3H5a2 2 0 0 0-2 2v4"/>
-              <path d="M15 3h4a2 2 0 0 1 2 2v4"/>
-              <path d="M9 21H5a2 2 0 0 1-2-2v-4"/>
-              <path d="M15 21h4a2 2 0 0 0 2-2v-4"/>
-              <circle cx="12" cy="10" r="3"/>
-              <path d="M7 21v-1a5 5 0 0 1 10 0v1"/>
-            </svg>
-          </span>
-          <span class="action-btn-text">
-            <strong>Registrar Residente</strong>
-            <small>Registra la entrada o salida de un residente.</small>
-          </span>
-          <span class="action-btn-arrow">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </span>
-        </button>
-        <button class="action-btn-offline" id="btn-manual-residente" title="Registro Manual (Offline)">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </button>
+    <div class="action-grid-rows">
+      <!-- Fila 1: Residentes (2 botones) -->
+      <div class="action-grid-row action-grid-row-2">
+        <!-- 1. Registrar ENTRADA de Residente -->
+        <div class="action-group">
+          <button class="action-btn btn-facial btn-entrada-residente" id="btn-registro-residente">
+            <span class="action-btn-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+                <path d="M9 3H5a2 2 0 0 0-2 2v4"/>
+                <path d="M15 3h4a2 2 0 0 1 2 2v4"/>
+                <path d="M9 21H5a2 2 0 0 1-2-2v-4"/>
+                <path d="M15 21h4a2 2 0 0 0 2-2v-4"/>
+                <circle cx="12" cy="10" r="3"/>
+                <path d="M7 21v-1a5 5 0 0 1 10 0v1"/>
+              </svg>
+            </span>
+            <div class="action-btn-bottom">
+              <span class="action-btn-text">
+                <strong>Entrada de Residente</strong>
+                <small>Reconocimiento facial o ingreso manual.</small>
+              </span>
+              <span class="action-btn-arrow">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
+          </button>
+          <button class="action-btn-offline" id="btn-manual-residente" title="Registro Manual (Offline)">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+        </div>
+
+        <!-- 2. Registrar SALIDA de Residente -->
+        <div class="action-group">
+          <button class="action-btn btn-salida-residente" id="btn-salida-residente">
+            <span class="active-residents-badge" id="badge-residentes-dentro" style="display:none">0 adentro</span>
+            <span class="action-btn-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+                <path d="M9 3H5a2 2 0 0 0-2 2v4"/>
+                <path d="M15 3h4a2 2 0 0 1 2 2v4"/>
+                <path d="M9 21H5a2 2 0 0 1-2-2v-4"/>
+                <path d="M15 21h4a2 2 0 0 0 2-2v-4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </span>
+            <div class="action-btn-bottom">
+              <span class="action-btn-text">
+                <strong>Salida de Residente</strong>
+                <small>Ver y registrar salida de residentes dentro.</small>
+              </span>
+              <span class="action-btn-arrow">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
+          </button>
+          <button class="action-btn-offline" id="btn-scan-salida-residente" title="Escanear Rostro Salida">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+        </div>
       </div>
 
-      <!-- 2. Registrar ENTRADA de Visitante -->
-      <div class="action-group">
-        <button class="action-btn btn-visita" id="btn-registro-visita">
-          <span class="pending-invitations-badge" id="badge-invitaciones-pendientes" style="display:none">0 pendientes</span>
-          <span class="action-btn-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="8.5" cy="7" r="4"/>
-              <polyline points="17 11 19 13 23 9"/>
-            </svg>
-          </span>
-          <span class="action-btn-text">
-            <strong>Entrada de Visitante</strong>
-            <small>Verificar código o registrar ingreso.</small>
-          </span>
-          <span class="action-btn-arrow">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </span>
-        </button>
-        <button class="action-btn-offline" id="btn-manual-visita" title="Registro Manual (Offline)">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </button>
-      </div>
+      <!-- Fila 2: Visitas y Domicilios (3 botones) -->
+      <div class="action-grid-row action-grid-row-3">
+        <!-- 3. Registrar ENTRADA de Visitante -->
+        <div class="action-group">
+          <button class="action-btn btn-visita" id="btn-registro-visita">
+            <span class="pending-invitations-badge" id="badge-invitaciones-pendientes" style="display:none">0 pendientes</span>
+            <span class="action-btn-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <polyline points="17 11 19 13 23 9"/>
+              </svg>
+            </span>
+            <div class="action-btn-bottom">
+              <span class="action-btn-text">
+                <strong>Entrada de Visitante</strong>
+                <small>Verificar código o registrar ingreso.</small>
+              </span>
+              <span class="action-btn-arrow">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
+          </button>
+          <button class="action-btn-offline" id="btn-manual-visita" title="Registro Manual (Offline)">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+        </div>
 
-      <!-- 3. Registrar SALIDA de Visitante -->
-      <div class="action-group">
-        <button class="action-btn btn-salida" id="btn-salida-visita">
-          <span class="active-visitors-badge" id="badge-visitantes-dentro" style="display:none">0 adentro</span>
-          <span class="action-btn-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </span>
-          <span class="action-btn-text">
-            <strong>Salida de Visitante</strong>
-            <small>Ver y registrar salida de visitantes dentro.</small>
-          </span>
-          <span class="action-btn-arrow">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </span>
-        </button>
-      </div>
+        <!-- 4. Registrar SALIDA de Visitante -->
+        <div class="action-group">
+          <button class="action-btn btn-salida" id="btn-salida-visita">
+            <span class="active-visitors-badge" id="badge-visitantes-dentro" style="display:none">0 adentro</span>
+            <span class="action-btn-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </span>
+            <div class="action-btn-bottom">
+              <span class="action-btn-text">
+                <strong>Salida de Visitante</strong>
+                <small>Ver y registrar salida de visitantes dentro.</small>
+              </span>
+              <span class="action-btn-arrow">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
+          </button>
+          <button class="action-btn-offline" id="btn-manual-salida-visita" title="Ver Salidas de Visitantes">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+        </div>
 
-      <!-- 4. Registrar Domicilio -->
-      <div class="action-group">
-        <button class="action-btn btn-domicilio" id="btn-registro-domicilio">
-          <span class="action-btn-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
-              <rect x="1" y="3" width="15" height="13"/>
-              <path d="M16 8h4l3 3v5h-7V8z"/>
-              <circle cx="5.5" cy="18.5" r="2.5"/>
-              <circle cx="18.5" cy="18.5" r="2.5"/>
-            </svg>
-          </span>
-          <span class="action-btn-text">
-            <strong>Registrar Domicilio</strong>
-            <small>Registra la entrada de domicilios y entregas.</small>
-          </span>
-          <span class="action-btn-arrow">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </span>
-        </button>
-        <button class="action-btn-offline" id="btn-manual-domicilio" title="Registro Manual (Offline)">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </button>
+        <!-- 5. Registrar Domicilio -->
+        <div class="action-group">
+          <button class="action-btn btn-domicilio" id="btn-registro-domicilio">
+            <span class="action-btn-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="1.6">
+                <rect x="1" y="3" width="15" height="13"/>
+                <path d="M16 8h4l3 3v5h-7V8z"/>
+                <circle cx="5.5" cy="18.5" r="2.5"/>
+                <circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+            </span>
+            <div class="action-btn-bottom">
+              <span class="action-btn-text">
+                <strong>Registrar Domicilio</strong>
+                <small>Registra la entrada de domicilios y entregas.</small>
+              </span>
+              <span class="action-btn-arrow">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
+          </button>
+          <button class="action-btn-offline" id="btn-manual-domicilio" title="Registro Manual (Offline)">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -310,6 +356,59 @@
   </main>
 </div>
 
+<!-- ─── PANTALLA SALIDAS DE RESIDENTES ──────────────────────────────────────── -->
+<div id="screen-salidas-residentes" class="screen">
+  <header class="app-header">
+    <button class="icon-btn" id="btn-back-salidas-residentes">
+      <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <div class="header-center">Salida de Residentes</div>
+    <div class="header-right"></div>
+  </header>
+
+  <main class="list-main">
+    <!-- Botón destacado: Escanear rostro para salida -->
+    <div style="padding: 14px 14px 4px;">
+      <button id="btn-quick-scan-salida" class="btn-action" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700;">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 3H5a2 2 0 0 0-2 2v4"/>
+          <path d="M15 3h4a2 2 0 0 1 2 2v4"/>
+          <path d="M9 21H5a2 2 0 0 1-2-2v-4"/>
+          <path d="M15 21h4a2 2 0 0 0 2-2v-4"/>
+          <circle cx="12" cy="10" r="3"/>
+          <path d="M7 21v-1a5 5 0 0 1 10 0v1"/>
+        </svg>
+        Escanear Rostro para Salida
+      </button>
+    </div>
+
+    <div class="recent-strip">
+      <div class="recent-header">
+        <span class="recent-title">Residentes en el Conjunto</span>
+        <button class="link-btn" id="btn-refresh-salidas-res" title="Actualizar">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Actualizar
+        </button>
+      </div>
+      <div style="padding: 12px 14px 6px;">
+        <div style="position:relative;">
+          <input
+            type="text"
+            id="search-salidas-res"
+            placeholder="Filtrar por nombre, cédula o apto…"
+            style="width:100%; padding:9px 14px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; outline:none; background:var(--white); transition:border-color .15s;"
+          >
+        </div>
+      </div>
+      <div id="salidas-residentes-cards-container" style="padding: 0 14px 14px;">
+        <!-- Tarjetas dinámicas de residentes adentro -->
+      </div>
+    </div>
+  </main>
+</div>
+
 <!-- ─── SIDE MENU ─────────────────────────────────────────────────────────────── -->
 <div class="menu-overlay" id="menu-overlay"></div>
 <nav class="side-menu" id="side-menu">
@@ -417,6 +516,7 @@
         <span id="modal-badge-text">—</span>
       </div>
     </div>
+    <div id="modal-discrepancy-alert" style="display:none; margin: 10px 0; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fcd34d; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-align: left; line-height: 1.4;"></div>
     <p class="action-label" id="modal-action-label">¿Cómo ingresa el residente?</p>
     <div class="mode-grid">
       <button class="mode-btn" id="mode-btn-pie">
@@ -458,6 +558,10 @@
           <input type="text" id="v-otro-modelo" placeholder="Modelo (Ej. Corolla)" class="facial-dark-input">
         </div>
       </div>
+
+      <!-- Alerta de vehículo registrado en acceso facial -->
+      <div id="box-facial-veh-alert" style="display:none; margin-top:12px;"></div>
+      <input type="hidden" id="f-facial-veh-perm-id" value="">
     </div>
 
     <button class="confirm-btn" id="modal-confirm-btn" disabled>Registrar Ingreso</button>
@@ -470,12 +574,12 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
-<script src="/static/porteria/js/db.js?v=3"></script>
-<script src="/static/porteria/js/api.js?v=3"></script>
+<script src="/static/porteria/js/db.js?v=10"></script>
+<script src="/static/porteria/js/api.js?v=10"></script>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-<script src="/static/porteria/js/facial.js?v=3"></script>
-<script src="/static/shared/js/sgar-poll.js?v=3"></script>
-<script src="/static/porteria/js/porteria.js?v=3"></script>
+<script src="/static/porteria/js/facial.js?v=10"></script>
+<script src="/static/shared/js/sgar-poll.js?v=10"></script>
+<script src="/static/porteria/js/porteria.js?v=10"></script>
 
 </body>
 </html>

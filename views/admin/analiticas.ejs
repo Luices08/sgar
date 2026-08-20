@@ -24,7 +24,9 @@
       </div>
 
       <input type="date" id="filter-date" style="padding:6px 10px; font-size:13px; border:1px solid var(--border); border-radius:8px; background:var(--card-bg, #fff); color:var(--text);" title="Seleccionar fecha">
-      <button id="btn-refresh-analytics" class="btn-secondary btn-sm" title="Recargar datos">🔄</button>
+      <button id="btn-refresh-analytics" class="btn-secondary btn-sm" title="Recargar datos">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
     </div>
   </header>
 
@@ -101,7 +103,7 @@
     <!-- ── SECCIÓN 1: ACCESOS (Personas / Visitas / Residentes) ── -->
     <div style="margin-bottom:28px;">
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-        <h2 style="font-size:17px; font-weight:700; margin:0;">🚶 Registro de Accesos (Personas y Visitas)</h2>
+        <h2 style="font-size:17px; font-weight:700; margin:0;">Registro de Accesos (Personas y Visitas)</h2>
       </div>
 
       <div class="dashboard-top-strip" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom:16px;">
@@ -138,7 +140,7 @@
     <!-- ── SECCIÓN 2: VEHÍCULOS (Ingresos, Salidas y Mayor Movimiento) ── -->
     <div>
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-        <h2 style="font-size:17px; font-weight:700; margin:0;">🚗 Control y Tráfico Vehicular</h2>
+        <h2 style="font-size:17px; font-weight:700; margin:0;">Control y Tráfico Vehicular</h2>
       </div>
 
       <div class="dashboard-top-strip" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom:16px;">
@@ -171,7 +173,7 @@
       <div class="panel-card" style="padding:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
           <div>
-            <h3 style="margin:0; font-size:16px; font-weight:700;">🏆 Vehículos con Mayor Movimiento en el Periodo</h3>
+            <h3 style="margin:0; font-size:16px; font-weight:700;">Vehículos con Mayor Movimiento en el Periodo</h3>
             <small style="color:var(--text-muted)">Identificación de vehículos más frecuentes y trazabilidad</small>
           </div>
           <span class="badge" id="sc-top-veh-count" style="background:#eff6ff;color:#1d4ed8;">Top vehículos</span>

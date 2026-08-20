@@ -5,6 +5,7 @@ const { ok, created, error, paginated } = require('../utils/response');
 const { ROLES } = require('../config/constants');
 const Vehicle = require('../models/Vehicle');
 const VehicleInvitation = require('../models/VehicleInvitation');
+const VehicleAccessLog = require('../models/VehicleAccessLog');
 const Resident = require('../models/Resident');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
@@ -26,7 +27,7 @@ const list = asyncHandler(async (req, res) => {
     filter.$or = [{ placa: re }, { apartamento: re }, { marca: re }, { modelo: re }];
   }
 
-  const [vehicles, total] = await Promise.all([
+  const [vehicles, total, openLogs] = await Promise.all([
     Vehicle.find(filter)
       .populate('responsablePrincipal', 'nombre apartamento telefono email cedula')
       .populate('autorizados', 'nombre apartamento telefono email cedula')
@@ -36,9 +37,36 @@ const list = asyncHandler(async (req, res) => {
       .limit(limit)
       .lean(),
     Vehicle.countDocuments(filter),
+    VehicleAccessLog.find({ tenant_id: req.tenantId, horaSalida: null }).sort({ horaIngreso: -1 }).lean(),
   ]);
 
-  return paginated(res, vehicles, total, page, limit);
+  const openLogsByVehicleId = new Map();
+  const openLogsByPlaca     = new Map();
+  openLogs.forEach(log => {
+    if (log.vehicle_id) openLogsByVehicleId.set(String(log.vehicle_id), log);
+    if (log.placa) openLogsByPlaca.set(log.placa.toUpperCase().trim(), log);
+  });
+
+  let decoratedVehicles = vehicles.map(v => {
+    const vPlaca = (v.placa || '').toUpperCase().trim();
+    const openLog = openLogsByVehicleId.get(String(v._id)) || openLogsByPlaca.get(vPlaca);
+    return {
+      ...v,
+      estadoAcceso: openLog ? 'dentro' : 'fuera',
+      ingresoActivo: openLog ? {
+        horaIngreso: openLog.horaIngreso,
+        conductor_nombre: openLog.conductor_nombre,
+        conductor_tipo: openLog.conductor_tipo,
+        visit_id: openLog.visit_id,
+      } : null,
+    };
+  });
+
+  if (req.query.estadoAcceso) {
+    decoratedVehicles = decoratedVehicles.filter(v => v.estadoAcceso === req.query.estadoAcceso);
+  }
+
+  return paginated(res, decoratedVehicles, total, page, limit);
 });
 
 // ─── OBTENER UN VEHÍCULO ───────────────────────────────────────────────────────
@@ -565,8 +593,77 @@ const remove = asyncHandler(async (req, res) => {
   return ok(res, {}, 'Vehículo y referencias eliminados en cascada');
 });
 
+// ─── LISTAR VEHÍCULOS NO REGISTRADOS / TEMPORALES ───────────────────────────
+const listNoRegistrados = asyncHandler(async (req, res) => {
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.min(100, parseInt(req.query.limit) || 20);
+  const skip  = (page - 1) * limit;
+
+  // Obtener todas las placas registradas en el conjunto
+  const registeredVehicles = await Vehicle.find({ tenant_id: req.tenantId, placa: { $exists: true, $ne: null } }).select('placa').lean();
+  const registeredPlacas = new Set(registeredVehicles.map(v => (v.placa || '').toUpperCase().trim()).filter(Boolean));
+
+  // Filtro base en VehicleAccessLog
+  const filter = {
+    tenant_id: req.tenantId,
+  };
+
+  if (req.query.estado === 'dentro') {
+    filter.horaSalida = null;
+  } else if (req.query.estado === 'salida') {
+    filter.horaSalida = { $ne: null };
+  }
+
+  if (req.query.tipo) {
+    filter.tipoVehiculo = req.query.tipo;
+  }
+
+  if (req.query.q) {
+    const term = req.query.q.trim();
+    const regex = new RegExp(term, 'i');
+    filter.$or = [
+      { placa: regex },
+      { apartamento: regex },
+      { conductor_nombre: regex },
+    ];
+  }
+
+  // Buscar logs vehiculares
+  const allLogs = await VehicleAccessLog.find(filter)
+    .populate('visit_id', 'marcaVehiculo modeloVehiculo empresa')
+    .sort({ horaIngreso: -1 })
+    .lean();
+
+  // Filtrar únicamente los no registrados en el catálogo oficial
+  const unregLogs = allLogs.filter(log => {
+    const p = (log.placa || '').toUpperCase().trim();
+    return !log.vehicle_id || !registeredPlacas.has(p) || log.esVehiculoRegistrado === false;
+  });
+
+  const total = unregLogs.length;
+  const paginatedItems = unregLogs.slice(skip, skip + limit).map(log => ({
+    _id: log._id,
+    placa: log.placa,
+    tipoVehiculo: log.tipoVehiculo || 'Carro',
+    marca: log.visit_id?.marcaVehiculo || '—',
+    modelo: log.visit_id?.modeloVehiculo || '',
+    apartamento: log.apartamento || '—',
+    conductor_nombre: log.conductor_nombre || (log.visit_id?.empresa ? `${log.visit_id.empresa} (Domicilio)` : 'Visitante / Tercero'),
+    conductor_tipo: log.conductor_tipo || 'visitante',
+    horaIngreso: log.horaIngreso,
+    horaSalida: log.horaSalida,
+    estadoAcceso: log.horaSalida ? 'salida' : 'dentro',
+    celador_nombre: log.celador_nombre || '—',
+    celador_salida_nombre: log.celador_salida_nombre || null,
+    visit_id: log.visit_id?._id || log.visit_id || null,
+  }));
+
+  return paginated(res, paginatedItems, total, page, limit);
+});
+
 module.exports = {
   list,
+  listNoRegistrados,
   getOne,
   misVehiculos,
   listByResident,

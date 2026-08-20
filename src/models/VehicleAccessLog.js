@@ -10,137 +10,137 @@ const mongoose = require('mongoose');
  */
 const vehicleAccessLogSchema = new mongoose.Schema({
   tenant_id: {
-    type:     mongoose.Schema.Types.ObjectId,
-    ref:      'Tenant',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
     required: true,
-    index:    true,
+    index: true,
   },
 
   // ─── VEHÍCULO ─────────────────────────────────────────────────────────────
   vehicle_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'Vehicle',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vehicle',
     default: null,
   },
   placa: {
-    type:      String,
-    required:  true,
-    trim:      true,
+    type: String,
+    required: true,
+    trim: true,
     uppercase: true,
   },
   tipoVehiculo: {
-    type:    String,
-    enum:    ['Carro', 'Motocicleta', 'Otro'],
+    type: String,
+    enum: ['Carro', 'Motocicleta', 'Otro'],
     default: 'Carro',
   },
   esVehiculoRegistrado: {
-    type:    Boolean,
+    type: Boolean,
     default: true,
   },
 
   // ─── RESPONSABLE PRINCIPAL REGISTRADO ─────────────────────────────────────
   responsablePrincipal_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'Resident',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resident',
     default: null,
   },
   responsablePrincipal_nombre: {
-    type:    String,
-    trim:    true,
+    type: String,
+    trim: true,
     default: null,
   },
   apartamento: {
-    type:      String,
-    trim:      true,
+    type: String,
+    trim: true,
     uppercase: true,
-    default:   null,
+    default: null,
   },
 
   // Compatibilidad hacia atrás
   propietario_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'Resident',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resident',
     default: null,
   },
   propietario_nombre: {
-    type:    String,
-    trim:    true,
+    type: String,
+    trim: true,
     default: null,
   },
 
   // ─── CONDUCTOR REAL ───────────────────────────────────────────────────────
   conductor_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'Resident',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resident',
     default: null,
   },
   conductor_nombre: {
-    type:    String,
-    trim:    true,
+    type: String,
+    trim: true,
     default: null,
   },
   conductor_tipo: {
-    type:    String,
-    enum:    ['residente', 'visitante', 'tercero'],
+    type: String,
+    enum: ['residente', 'visitante', 'tercero'],
     default: 'residente',
   },
   // true = El conductor es el Responsable Principal o una Persona Autorizada
   esAutorizado: {
-    type:    Boolean,
+    type: Boolean,
     default: true,
   },
   // true = Salta advertencia al celador porque el conductor no está autorizado
   alertaNoAutorizado: {
-    type:    Boolean,
+    type: Boolean,
     default: false,
   },
 
   // Compatibilidad hacia atrás
   esPropietario: {
-    type:    Boolean,
+    type: Boolean,
     default: true,
   },
   permission_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'VehiclePermission',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'VehiclePermission',
     default: null,
   },
 
   // ─── TIEMPOS ──────────────────────────────────────────────────────────────
   horaIngreso: {
-    type:    Date,
+    type: Date,
     default: Date.now,
   },
   horaSalida: {
-    type:    Date,
+    type: Date,
     default: null,
   },
 
   // ─── TRAZABILIDAD ─────────────────────────────────────────────────────────
   celador_id: {
-    type:     mongoose.Schema.Types.ObjectId,
-    ref:      'User',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
   },
   celador_nombre: {
     type: String,
   },
   celador_salida_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'User',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     default: null,
   },
   celador_salida_nombre: {
-    type:    String,
+    type: String,
     default: null,
   },
   registradoEnPorteria: {
-    type:    Boolean,
+    type: Boolean,
     default: false,
   },
   visit_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'Visit',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Visit',
     default: null,
   },
 }, {

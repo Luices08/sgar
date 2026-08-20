@@ -1,0 +1,78 @@
+<%- include('partials/head') %>
+</head>
+<body class="admin-layout">
+<%- include('partials/nav') %>
+<main class="main-content">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Visitantes</h1>
+      <p class="page-subtitle" id="sub-count">Cargando…</p>
+    </div>
+    <div class="header-actions">
+      <input type="search" id="search-input" class="search-input" placeholder="Buscar visitante, cédula, apto, placa…" style="min-width:240px;">
+      <input type="date" id="filter-date" class="date-input">
+      <select id="filter-tipo" class="select-input">
+        <option value="">Todos los tipos</option>
+        <option value="visita">Visitas</option>
+        <option value="domicilio">Domicilios</option>
+        <option value="tecnico_mantenimiento">Técnicos</option>
+      </select>
+      <select id="filter-estado-acceso" class="select-input">
+        <option value="">Todos los estados</option>
+        <option value="dentro">Dentro del conjunto</option>
+        <option value="fuera">Fuera del conjunto</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Selector de Pestañas: Todos vs Adentro -->
+  <div style="display:flex; background:var(--white); border-bottom:1px solid var(--border); padding:10px 16px; gap:10px; margin-bottom: 16px; border-radius: var(--radius); box-shadow: var(--shadow-xs);">
+    <button id="tab-todos-visitantes" style="padding:9px 16px; border-radius:var(--radius); border:none; font-weight:700; font-size:14px; cursor:pointer; background:var(--acento); color:#fff; transition:all .15s; display:flex; align-items:center; gap:6px;">
+      <span>Todos los Visitantes</span>
+      <span id="badge-count-todos" style="background:rgba(255,255,255,0.25); padding:2px 7px; border-radius:10px; font-size:11px;">—</span>
+    </button>
+    <button id="tab-visitantes-dentro" style="padding:9px 16px; border-radius:var(--radius); border:none; font-weight:700; font-size:14px; cursor:pointer; background:var(--bg); color:var(--text-muted); transition:all .15s; display:flex; align-items:center; gap:6px;">
+      <span>Visitantes Adentro</span>
+      <span id="badge-count-dentro" style="background:#fee2e2; color:#b91c1c; padding:2px 7px; border-radius:10px; font-size:11px;">0 adentro</span>
+    </button>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table" id="visitors-table">
+      <thead>
+        <tr>
+          <th>Visitante / Persona</th>
+          <th>Cédula</th>
+          <th>Apartamento</th>
+          <th>Tipo</th>
+          <th>Vehículo</th>
+          <th>Hora Ingreso</th>
+          <th>Hora Salida</th>
+          <th>Estado</th>
+          <th>Celador</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="visitors-tbody">
+        <tr><td colspan="10" class="table-loading">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</main>
+
+<!-- Drawer detalle de visitante -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer-visitor">
+  <div class="drawer-header">
+    <h2 class="drawer-title" id="drawer-title">Detalle del Visitante</h2>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body" id="visitor-detail-body">
+  </div>
+</aside>
+
+<script src="/static/admin/js/admin-common.js"></script>
+<script src="/static/admin/js/visitantes.js"></script>
+</body>
+</html>

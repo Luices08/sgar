@@ -127,6 +127,11 @@ const complete = asyncHandler(async (req, res) => {
     }
   }
 
+  const cleanPlaca = req.body.placa ? req.body.placa.toUpperCase().trim() : null;
+  const tipoVehiculo = req.body.tipoVehiculo || (cleanPlaca ? 'Carro' : null);
+  const marcaVehiculo = req.body.marcaVehiculo?.trim() || null;
+  const modeloVehiculo = req.body.modeloVehiculo?.trim() || null;
+
   // Crear registro de visita vinculado
   const visit = await Visit.create({
     tenant_id:            req.tenantId,
@@ -134,6 +139,10 @@ const complete = asyncHandler(async (req, res) => {
     nombre:               inv.nombreVisitante,
     cedula:               inv.cedulaVisitante,
     apartamento:          inv.apartamento,
+    placa:                cleanPlaca,
+    tipoVehiculo,
+    marcaVehiculo,
+    modeloVehiculo,
     horaIngreso:          new Date(),
     celador_id:           req.user.user_id,
     celador_nombre:       req.user.nombre,
@@ -141,6 +150,32 @@ const complete = asyncHandler(async (req, res) => {
     invitation_id:        inv._id,
     syncStatus:           'sincronizado',
   });
+
+  if (cleanPlaca) {
+    try {
+      const VehicleAccessLog = require('../models/VehicleAccessLog');
+      const Vehicle = require('../models/Vehicle');
+      const regVeh = await Vehicle.findOne({ tenant_id: req.tenantId, placa: cleanPlaca }).lean();
+
+      await VehicleAccessLog.create({
+        tenant_id:               req.tenantId,
+        vehicle_id:              regVeh?._id || null,
+        placa:                   cleanPlaca,
+        tipoVehiculo:            tipoVehiculo || regVeh?.tipo || 'Carro',
+        esVehiculoRegistrado:    !!regVeh,
+        responsablePrincipal_id: regVeh?.responsablePrincipal || null,
+        apartamento:             inv.apartamento || regVeh?.apartamento || null,
+        conductor_nombre:        inv.nombreVisitante,
+        conductor_tipo:          'visitante',
+        esAutorizado:            true,
+        horaIngreso:             visit.horaIngreso,
+        celador_id:              req.user.user_id,
+        celador_nombre:          req.user.nombre,
+        registradoEnPorteria:    true,
+        visit_id:                visit._id,
+      });
+    } catch (_) {}
+  }
 
   inv.estado           = INVITATION_STATUS.COMPLETADO;
   inv.visit_id         = visit._id;
@@ -156,7 +191,7 @@ const complete = asyncHandler(async (req, res) => {
       apartamento:       inv.apartamento,
       tipo:              'visita',
       titulo:            `Visita de ${inv.nombreVisitante} — Apto ${inv.apartamento}`,
-      mensaje:           `Tu invitado ${inv.nombreVisitante} (C.C. ${inv.cedulaVisitante || '—'}) ingresó con código a las ${new Date().toLocaleTimeString('es-CO')}.`,
+      mensaje:           `Tu invitado ${inv.nombreVisitante} (C.C. ${inv.cedulaVisitante || '—'})${cleanPlaca ? ' con vehículo ' + cleanPlaca : ''} ingresó con código a las ${new Date().toLocaleTimeString('es-CO')}.`,
       visit_id:          visit._id,
       requiereRespuesta: false,
     });

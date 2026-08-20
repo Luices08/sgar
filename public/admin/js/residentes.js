@@ -108,8 +108,8 @@ async function loadResidents() {
 
   tbody.innerHTML = residents.map(r => {
     const presenciaBadge = r.dentro
-      ? '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:600">🟢 Dentro</span>'
-      : '<span class="badge" style="background:#f1f5f9;color:#64748b">⚪ Fuera</span>';
+      ? '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:600">Dentro</span>'
+      : '<span class="badge" style="background:#f1f5f9;color:#64748b">Fuera</span>';
 
     return `
     <tr>
@@ -269,7 +269,7 @@ async function captureFace() {
     preview.style.backgroundImage = `url('${canvas.toDataURL('image/jpeg', 0.8)}')`;
     preview.classList.add('has-image');
     preview.classList.remove('is-enrolled');
-    preview.innerHTML = '<span>✓ Landmarks detectados — listo para enrolar</span>';
+    preview.innerHTML = '<span>Landmarks detectados — listo para enrolar</span>';
     document.getElementById('btn-camera-start').textContent = 'Prender cámara';
     document.getElementById('btn-camera-retake').style.display = '';
 
@@ -319,7 +319,7 @@ function setExistingFacePreview(faceId) {
   preview.style.display = 'flex';
   preview.classList.add('has-image', 'is-enrolled');
   preview.style.backgroundImage = '';
-  preview.innerHTML = '<span>✓ Rostro ya enrolado (descriptor guardado)</span>';
+  preview.innerHTML = '<span>Rostro ya enrolado (descriptor guardado)</span>';
   document.getElementById('btn-camera-retake').style.display = '';
 }
 

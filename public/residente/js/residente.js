@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Verificar sesión existente
   const token = localStorage.getItem('sgar_token');
-  const user  = localStorage.getItem('sgar_user');
+  const user = localStorage.getItem('sgar_user');
   if (token && user) {
     const u = JSON.parse(user);
     if (u.rol === 'residente') {
@@ -44,7 +44,7 @@ async function initApp(user) {
 
   // UI del menú
   const nombre = residenteData?.nombre || user.nombre || 'Residente';
-  document.getElementById('menu-name').textContent   = nombre;
+  document.getElementById('menu-name').textContent = nombre;
   document.getElementById('menu-avatar').textContent = nombre.charAt(0).toUpperCase();
   document.getElementById('header-title').textContent = 'Mi Portal';
 
@@ -87,7 +87,7 @@ async function initApp(user) {
   document.getElementById('filter-historial').addEventListener('change', loadHistorial);
 
   // Cargar datos iniciales
-  await Promise.all([loadNotificaciones(), loadHistorial(), loadInvitaciones(), loadVehiculos()]);
+  await Promise.allSettled([loadNotificaciones(), loadHistorial(), loadInvitaciones(), loadVehiculos()]);
 
   // Iniciar Polling en tiempo real (~5 segundos)
   if (window.SGARPoll) {
@@ -135,15 +135,15 @@ async function loadNotificaciones() {
 
   // Actualizar stats
   const statNoLeidos = document.getElementById('stat-no-leidos');
-  const statLeidos   = document.getElementById('stat-leidos');
+  const statLeidos = document.getElementById('stat-leidos');
   if (statNoLeidos) statNoLeidos.textContent = noLeidas;
-  if (statLeidos)   statLeidos.textContent   = notifs.length - noLeidas;
+  if (statLeidos) statLeidos.textContent = notifs.length - noLeidas;
 
   // Badge en el tab
   const badge = document.getElementById('badge-notif');
   if (badge) {
     if (noLeidas > 0) {
-      badge.textContent   = noLeidas > 99 ? '99+' : noLeidas;
+      badge.textContent = noLeidas > 99 ? '99+' : noLeidas;
       badge.style.display = 'flex';
     } else {
       badge.style.display = 'none';
@@ -168,6 +168,13 @@ async function loadNotificaciones() {
 
   container.innerHTML = notifs.map(n => renderNotifCard(n)).join('');
 
+  // Si hay alguna notificación pendiente de respuesta que aún no se ha resuelto, desplegar modal si está en pantalla
+  const pendingNotif = notifs.find(n => !n.leida && n.requiereRespuesta && n.estadoAprobacion === 'pendiente');
+  const modalOverlay = document.getElementById('modal-overlay');
+  if (pendingNotif && modalOverlay && modalOverlay.style.display !== 'flex') {
+    mostrarModalAutorizacion(pendingNotif);
+  }
+
   // Event listeners para marcar como leída al hacer click
   container.querySelectorAll('.notif-card.no-leida').forEach(card => {
     card.addEventListener('click', () => markRead(card.dataset.id));
@@ -176,12 +183,14 @@ async function loadNotificaciones() {
 
 function renderNotifCard(n) {
   const iconMap = {
-    visita:                `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2563eb" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-    domicilio:             `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#16a34a" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
-    vehiculo:              `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#d97706" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`,
-    invitacion_vehiculo:   `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2563eb" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
+    visita: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2563eb" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    domicilio: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#16a34a" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+    vehiculo: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#d97706" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`,
+    permiso_vehiculo: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#d97706" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="7" cy="21" r="2"/><circle cx="17" cy="21" r="2"/><path d="M14 11V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4"/></svg>`,
+    autorizacion_visita: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2563eb" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>`,
+    invitacion_vehiculo: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2563eb" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
     alerta_vehiculo_no_autorizado: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#dc2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
-    sistema:               `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#66708a" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    sistema: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#66708a" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
   };
 
   const icon = iconMap[n.tipo] || iconMap.sistema;
@@ -192,14 +201,39 @@ function renderNotifCard(n) {
     if (n.estadoDomicilio === 'recibido' || n.fechaRecepcion) {
       actionBtnHtml = `
         <div style="margin-top:8px;">
-          <span class="badge" style="background:#dcfce7;color:#15803d;font-weight:600;">✓ Domicilio recibido ${n.fechaRecepcion ? 'a las ' + fmtTime(n.fechaRecepcion) : ''}</span>
+          <span class="badge" style="background:#dcfce7;color:#15803d;font-weight:600;">Domicilio recibido ${n.fechaRecepcion ? 'a las ' + fmtTime(n.fechaRecepcion) : ''}</span>
         </div>`;
     } else {
       actionBtnHtml = `
         <div style="margin-top:10px;">
-          <button class="btn-primary-sm" style="background:#16a34a;border-color:#16a34a;cursor:pointer;" onclick="event.stopPropagation(); confirmarRecepcionDomicilio('${n.visit_id || ''}', '${n._id}')">
-            📦 Recibí mi domicilio
+          <button class="btn-primary-sm" style="background:#16a34a;border-color:#16a34a;cursor:pointer;display:inline-flex;align-items:center;gap:6px;" onclick="event.stopPropagation(); confirmarRecepcionDomicilio('${n.visit_id || ''}', '${n._id}')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Confirmar recibido
           </button>
+        </div>`;
+    }
+  } else if (n.tipo === 'permiso_vehiculo' || n.tipo === 'autorizacion_visita' || n.requiereRespuesta) {
+    if (n.estadoAprobacion === 'pendiente') {
+      actionBtnHtml = `
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-primary-sm" style="background:#059669; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:6px; font-weight:700; color:#fff; font-size:12px; box-shadow:0 1px 2px rgba(0,0,0,0.1);" onclick="event.stopPropagation(); responderAutorizacionNotif('${n._id}', 'aprobado')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Aceptar y Autorizar
+          </button>
+          <button class="btn-primary-sm" style="background:#dc2626; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:6px; font-weight:700; color:#fff; font-size:12px;" onclick="event.stopPropagation(); responderAutorizacionNotif('${n._id}', 'rechazado')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Rechazar
+          </button>
+        </div>`;
+    } else if (n.estadoAprobacion === 'aprobado') {
+      actionBtnHtml = `
+        <div style="margin-top:8px;">
+          <span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700; padding:4px 8px; border-radius:6px; font-size:11px;"> Acceso Autorizado</span>
+        </div>`;
+    } else if (n.estadoAprobacion === 'rechazado') {
+      actionBtnHtml = `
+        <div style="margin-top:8px;">
+          <span class="badge" style="background:#fee2e2; color:#991b1b; font-weight:700; padding:4px 8px; border-radius:6px; font-size:11px;"> Acceso Rechazado</span>
         </div>`;
     }
   }
@@ -218,6 +252,27 @@ function renderNotifCard(n) {
     </div>`;
 }
 
+async function responderAutorizacionNotif(notifId, status) {
+  if (!notifId) return;
+
+  const res = await apiCall(`/api/notifications/${notifId}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  });
+
+  if (res?.success) {
+    closeModal();
+    await Promise.all([loadNotificaciones(), loadVehiculos()]);
+    if (status === 'aprobado') {
+      alert('¡Has autorizado el acceso del vehículo!');
+    } else {
+      alert('Has rechazado el acceso del vehículo.');
+    }
+  } else {
+    alert(res?.message || 'Error al procesar la respuesta');
+  }
+}
+
 async function confirmarRecepcionDomicilio(visitId, notifId) {
   if (!visitId) return alert('No se encontró el identificador del domicilio');
 
@@ -225,7 +280,7 @@ async function confirmarRecepcionDomicilio(visitId, notifId) {
   if (res?.success) {
     if (notifId) markRead(notifId);
     await Promise.all([loadNotificaciones(), loadHistorial()]);
-    alert('✓ ¡Domicilio confirmado como recibido!');
+    alert('¡Domicilio confirmado como recibido!');
   } else {
     alert(res?.message || 'Error al confirmar la recepción del domicilio');
   }
@@ -272,26 +327,27 @@ async function loadHistorial() {
 
   container.innerHTML = visits.map(v => {
     const badgeMap = {
-      residente:             '<span class="badge" style="background:#eff6ff;color:#1d4ed8">Residente</span>',
-      visita:                '<span class="badge" style="background:#f0fdf4;color:#15803d">Visita</span>',
-      domicilio:             '<span class="badge" style="background:#fefce8;color:#a16207">Domicilio</span>',
+      residente: '<span class="badge" style="background:#eff6ff;color:#1d4ed8">Residente</span>',
+      visita: '<span class="badge" style="background:#f0fdf4;color:#15803d">Visita</span>',
+      domicilio: '<span class="badge" style="background:#fefce8;color:#a16207">Domicilio</span>',
       tecnico_mantenimiento: '<span class="badge" style="background:#f3e8ff;color:#7e22ce">Técnico</span>',
     };
 
     let estadoStr = '';
     if (v.tipo === 'domicilio') {
       if (v.estadoDomicilio === 'recibido' || v.fechaRecepcion) {
-        estadoStr = `<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:600;">✓ Recibido (${fmtTime(v.fechaRecepcion || v.horaSalida)})</span>`;
+        estadoStr = `<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:600;">Recibido (${fmtTime(v.fechaRecepcion || v.horaSalida)})</span>`;
       } else {
         estadoStr = `
-          <button class="btn-primary-sm" style="background:#16a34a;border-color:#16a34a;font-size:12px;padding:4px 8px;cursor:pointer;" onclick="confirmarRecepcionDomicilio('${v._id}')">
-            📦 Recibí mi domicilio
+          <button class="btn-primary-sm" style="background:#16a34a;border-color:#16a34a;font-size:12px;padding:4px 8px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" onclick="confirmarRecepcionDomicilio('${v._id}')">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Confirmar recibido
           </button>`;
       }
     } else {
       const isDentro = !v.horaSalida;
       estadoStr = isDentro
-        ? '<span style="color:#16a34a;font-weight:600">🟢 Dentro</span>'
+        ? '<span style="color:#16a34a;font-weight:600">Dentro</span>'
         : `<span style="color:#64748b">Salida: ${fmtTime(v.horaSalida)}</span>`;
     }
 
@@ -343,10 +399,10 @@ async function loadInvitaciones() {
     const estadoBadge = i.estado === 'completado' || i.estado === 'usada'
       ? '<span class="badge" style="background:#f1f5f9;color:#475569">Ingresó</span>'
       : i.estado === 'cancelado' || i.estado === 'cancelada'
-      ? '<span class="badge" style="background:#fee2e2;color:#991b1b">Cancelada</span>'
-      : isExpirada
-      ? '<span class="badge" style="background:#fef3c7;color:#92400e">Expirada</span>'
-      : '<span class="badge" style="background:#dcfce7;color:#15803d">Activa</span>';
+        ? '<span class="badge" style="background:#fee2e2;color:#991b1b">Cancelada</span>'
+        : isExpirada
+          ? '<span class="badge" style="background:#fef3c7;color:#92400e">Expirada</span>'
+          : '<span class="badge" style="background:#dcfce7;color:#15803d">Activa</span>';
 
     return `
       <div class="panel-card" style="padding:14px; margin-bottom:10px;">
@@ -369,7 +425,7 @@ async function loadInvitaciones() {
 }
 
 // Helper para presets rápidos de fecha de expiración
-window.setExpPreset = function(hours) {
+window.setExpPreset = function (hours) {
   const d = new Date(Date.now() + hours * 3600 * 1000);
   const pad = (n) => String(n).padStart(2, '0');
   const str = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -446,11 +502,11 @@ function openFormInvitacion() {
     }
 
     const payload = {
-      nombreVisitante:  document.getElementById('inv-nombre').value.trim(),
-      cedulaVisitante:  cedulaVal,
-      tipo:             'visita',
+      nombreVisitante: document.getElementById('inv-nombre').value.trim(),
+      cedulaVisitante: cedulaVal,
+      tipo: 'visita',
       tiempo_caducidad: expDate.toISOString(),
-      fechaEsperada:    new Date().toISOString(),
+      fechaEsperada: new Date().toISOString(),
     };
 
     try {
@@ -536,11 +592,11 @@ async function loadVehiculos() {
   } else {
     listContainer.innerHTML = vehicles.map(v => {
       const isPrincipal = (v.responsablePrincipal?._id && String(v.responsablePrincipal._id) === String(currentResidentId)) ||
-                          (!v.responsablePrincipal && v.propietarios && String(v.propietarios[0]) === String(currentResidentId));
+        (!v.responsablePrincipal && v.propietarios && String(v.propietarios[0]) === String(currentResidentId));
 
       const roleBadge = isPrincipal
-        ? '<span class="badge" style="background:#fef3c7;color:#92400e;font-weight:700;">⭐ Responsable Principal</span>'
-        : '<span class="badge" style="background:#e0f2fe;color:#0369a1;font-weight:600;">👤 Persona Autorizada</span>';
+        ? '<span class="badge" style="background:#fef3c7;color:#92400e;font-weight:700;">Responsable Principal</span>'
+        : '<span class="badge" style="background:#e0f2fe;color:#0369a1;font-weight:600;">Persona Autorizada</span>';
 
       const fotoHtml = v.foto
         ? `<img src="${v.foto}" style="width:64px; height:64px; border-radius:var(--radius); object-fit:cover;">`
@@ -615,12 +671,12 @@ async function loadVehiculos() {
     enviadasContainer.style.display = 'block';
     enviadasList.innerHTML = sentInvitations.map(inv => {
       const stateBadge = inv.estado === 'pendiente'
-        ? '<span class="badge" style="background:#fef3c7;color:#92400e">⏳ Pendiente de aceptación</span>'
+        ? '<span class="badge" style="background:#fef3c7;color:#92400e">Pendiente de aceptación</span>'
         : inv.estado === 'aceptada'
-        ? '<span class="badge" style="background:#dcfce7;color:#15803d">✓ Aceptada</span>'
-        : inv.estado === 'rechazada'
-        ? '<span class="badge" style="background:#fee2e2;color:#991b1b">✕ Rechazada</span>'
-        : '<span class="badge" style="background:#f1f5f9;color:#64748b">Cancelada</span>';
+          ? '<span class="badge" style="background:#dcfce7;color:#15803d">Aceptada</span>'
+          : inv.estado === 'rechazada'
+            ? '<span class="badge" style="background:#fee2e2;color:#991b1b">Rechazada</span>'
+            : '<span class="badge" style="background:#f1f5f9;color:#64748b">Cancelada</span>';
 
       return `
         <div class="panel-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center; font-size:13px;">
@@ -890,9 +946,48 @@ function closeModal() {
   }
 }
 
+function openModal(title, html) {
+  const modalOverlay = document.getElementById('modal-overlay');
+  const modalCard = document.getElementById('modal-card');
+  const modalBody = document.getElementById('modal-body');
+  if (modalBody) {
+    modalBody.innerHTML = `
+      ${title ? `<h3 style="font-size:16px; font-weight:800; color:var(--text); margin-bottom:14px;">${escHtml(title)}</h3>` : ''}
+      ${html}
+    `;
+  }
+  if (modalOverlay) {
+    modalOverlay.style.display = 'flex';
+    setTimeout(() => {
+      modalOverlay.classList.add('show');
+      if (modalCard) modalCard.classList.add('show');
+    }, 10);
+  }
+}
+
+function mostrarModalAutorizacion(n) {
+  if (!n || n.estadoAprobacion !== 'pendiente') return;
+  const isVeh = n.tipo === 'permiso_vehiculo' || n.vehicle_id;
+  const html = `
+    <div style="background:#eff6ff; border:1.5px solid #3b82f6; border-radius:10px; padding:16px; margin-bottom:16px;">
+      <div style="font-size:15px; font-weight:800; color:#1e40af; margin-bottom:6px;">${escHtml(n.titulo)}</div>
+      <div style="font-size:13px; color:#1e3a8a; line-height:1.4;">${escHtml(n.mensaje)}</div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <button class="btn-primary" style="background:#059669; border-color:#059669; font-weight:700; padding:12px; cursor:pointer;" onclick="responderAutorizacionNotif('${n._id}', 'aprobado')">
+        ✓ Aceptar y Autorizar
+      </button>
+      <button class="btn-primary" style="background:#dc2626; border-color:#dc2626; font-weight:700; padding:12px; cursor:pointer;" onclick="responderAutorizacionNotif('${n._id}', 'rechazado')">
+        ✕ Rechazar
+      </button>
+    </div>
+  `;
+  openModal(isVeh ? 'Solicitud de Acceso Vehicular' : 'Solicitud de Acceso', html);
+}
+
 /* ─── LOGOUT ─────────────────────────────────────────────────────────────────── */
 async function doLogout() {
-  try { await apiCall('/api/auth/logout', { method: 'POST' }); } catch (_) {}
+  try { await apiCall('/api/auth/logout', { method: 'POST' }); } catch (_) { }
   localStorage.removeItem('sgar_token');
   localStorage.removeItem('sgar_user');
   document.cookie = 'token=; Max-Age=0; path=/';
@@ -906,7 +1001,7 @@ async function apiCall(path, options = {}, withAuth = true) {
     const token = localStorage.getItem('sgar_token');
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
-  const res  = await fetch(API_BASE + path, { ...options, headers });
+  const res = await fetch(API_BASE + path, { ...options, headers });
   const data = await res.json();
   if (res.status === 401 && withAuth) doLogout();
   return data;

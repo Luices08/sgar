@@ -26,6 +26,40 @@ function validarCamposVisitante({ nombre, documento, telefono }) {
   return errores;
 }
 
+function validarFormatoPlaca(tipo, placa) {
+  if (!placa) return { valida: false, mensaje: 'La placa del vehículo es requerida.' };
+  const clean = placa.toUpperCase().replace(/[\s-]/g, '').trim();
+  const t = (tipo || 'Carro').toLowerCase();
+
+  if (t === 'motocicleta' || t === 'moto') {
+    const regexMoto = /^[A-Z]{3}[0-9]{2}[A-Z]$/;
+    if (!regexMoto.test(clean)) {
+      return {
+        valida: false,
+        mensaje: 'Formato de placa de moto inválido. Debe tener estrictamente 3 letras, 2 números y 1 letra (Ej: ABC 12D).'
+      };
+    }
+  } else if (t === 'carro' || t === 'automovil' || t === 'automóvil') {
+    const regexCarro = /^[A-Z]{3}[0-9]{3}$/;
+    if (!regexCarro.test(clean)) {
+      return {
+        valida: false,
+        mensaje: 'Formato de placa de carro inválido. Debe tener estrictamente 3 letras y 3 números (Ej: ABC 123).'
+      };
+    }
+  } else {
+    const regexGenerico = /^[A-Z0-9]{5,7}$/;
+    if (!regexGenerico.test(clean)) {
+      return {
+        valida: false,
+        mensaje: 'Formato de placa inválido.'
+      };
+    }
+  }
+
+  return { valida: true, cleanPlaca: clean };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // REGISTRAR VISITANTE — MANUAL (sin código de invitación)
 // POST /api/visitors/registro-manual
@@ -41,11 +75,26 @@ const registroManual = asyncHandler(async (req, res) => {
     empresa,        // opcional para técnicos
     observaciones,
     localId,
+    placa,
+    tipoVehiculo,
+    marcaVehiculo,
+    modeloVehiculo,
   } = req.body;
 
   // Validaciones de formato
   const errores = validarCamposVisitante({ nombre, documento, telefono });
   if (!apartamento) errores.push('El apartamento es requerido.');
+
+  let cleanPlaca = null;
+  if (placa && String(placa).trim()) {
+    const valPlaca = validarFormatoPlaca(tipoVehiculo, placa);
+    if (!valPlaca.valida) {
+      errores.push(valPlaca.mensaje);
+    } else {
+      cleanPlaca = valPlaca.cleanPlaca;
+    }
+  }
+
   if (errores.length > 0) return error(res, errores.join(' '), 422, errores);
 
   // Deduplicar offline
@@ -66,6 +115,10 @@ const registroManual = asyncHandler(async (req, res) => {
     cedula:               documento.trim(),
     empresa:              empresa?.trim() || null,
     apartamento:          apartamento.toUpperCase().trim(),
+    placa:                cleanPlaca,
+    tipoVehiculo:         tipoVehiculo || (cleanPlaca ? 'Carro' : null),
+    marcaVehiculo:        marcaVehiculo?.trim() || null,
+    modeloVehiculo:       modeloVehiculo?.trim() || null,
     horaIngreso:          new Date(),
     celador_id:           req.user.user_id,
     celador_nombre:       req.user.nombre,
@@ -175,31 +228,72 @@ const listar = asyncHandler(async (req, res) => {
   const limit = Math.min(100, parseInt(req.query.limit) || 20);
   const skip  = (page - 1) * limit;
 
+  const validTypes = [VISIT_TYPES.VISITA, VISIT_TYPES.DOMICILIO, VISIT_TYPES.TECNICO, 'visita', 'domicilio', 'tecnico_mantenimiento'];
+
   const filter = {
     tenant_id: req.tenantId,
     eliminado: false,
-    tipo:      { $in: [VISIT_TYPES.VISITA, VISIT_TYPES.TECNICO] },
+    tipo:      req.query.tipo ? req.query.tipo : { $in: validTypes },
   };
 
-  if (req.query.apartamento) filter.apartamento = req.query.apartamento.toUpperCase();
-  if (req.query.fecha) {
-    const d = new Date(req.query.fecha);
-    filter.horaIngreso = {
-      $gte: new Date(d.setHours(0, 0, 0, 0)),
-      $lte: new Date(d.setHours(23, 59, 59, 999)),
-    };
+  if (req.query.apartamento) filter.apartamento = req.query.apartamento.toUpperCase().trim();
+
+  if (req.query.estado === 'dentro' || req.query.estadoAcceso === 'dentro') {
+    filter.horaSalida = null;
+  } else if (req.query.estado === 'fuera' || req.query.estado === 'salida' || req.query.estadoAcceso === 'fuera') {
+    filter.horaSalida = { $ne: null };
   }
 
-  const [visits, total] = await Promise.all([
+  if (req.query.q) {
+    const term = req.query.q.trim();
+    const regex = new RegExp(term, 'i');
+    filter.$or = [
+      { nombre: regex },
+      { cedula: regex },
+      { apartamento: regex },
+      { empresa: regex },
+      { placa: regex },
+    ];
+  }
+
+  if (req.query.fecha) {
+    const parts = req.query.fecha.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const start = new Date(year, month, day, 0, 0, 0, 0);
+      const end = new Date(year, month, day, 23, 59, 59, 999);
+      filter.horaIngreso = { $gte: start, $lte: end };
+    }
+  }
+
+  const [visits, total, insideCount] = await Promise.all([
     Visit.find(filter).sort({ horaIngreso: -1 }).skip(skip).limit(limit).lean(),
     Visit.countDocuments(filter),
+    Visit.countDocuments({
+      tenant_id: req.tenantId,
+      eliminado: false,
+      tipo: { $in: validTypes },
+      horaSalida: null,
+    }),
   ]);
+
+  const decoratedVisits = visits.map(v => ({
+    ...v,
+    estadoAcceso: v.horaSalida ? 'fuera' : 'dentro',
+  }));
 
   return res.status(200).json({
     success: true,
-    data: visits,
+    data: decoratedVisits,
+    meta: {
+      dentroCount: insideCount,
+    },
     pagination: {
-      total, page: Number(page), limit: Number(limit),
+      total,
+      page: Number(page),
+      limit: Number(limit),
       totalPages: Math.ceil(total / limit),
     },
   });

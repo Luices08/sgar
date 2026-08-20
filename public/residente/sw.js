@@ -1,7 +1,7 @@
 /* ─── SGAR Residente — Service Worker ──────────────────────────────────────── */
 'use strict';
 
-const CACHE_NAME    = 'sgar-residente-v1';
+const CACHE_NAME    = 'sgar-residente-v11';
 const STATIC_ASSETS = [
   '/residente',
   '/static/residente/css/residente.css',

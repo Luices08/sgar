@@ -79,9 +79,9 @@ const dbVisitas = {
 
     // Si ya existe por _id o localId, actualizarlo dentro del mismo tenant
     if (visitData._id || visitData.localId) {
-      const existing = await db.visitas.filter(v => 
-        ((visitData._id && v._id === visitData._id) || 
-         (visitData.localId && v.localId === visitData.localId)) &&
+      const existing = await db.visitas.filter(v =>
+        ((visitData._id && v._id === visitData._id) ||
+          (visitData.localId && v.localId === visitData.localId)) &&
         (!tenantId || !v.tenant_id || String(v.tenant_id) === String(tenantId))
       ).first();
 
@@ -89,11 +89,11 @@ const dbVisitas = {
         const updatedRow = {
           ...existing,
           ...visitData,
-          tenant_id:       tenantId || existing.tenant_id,
-          horaSalida:      visitData.horaSalida !== undefined ? visitData.horaSalida : existing.horaSalida,
+          tenant_id: tenantId || existing.tenant_id,
+          horaSalida: visitData.horaSalida !== undefined ? visitData.horaSalida : existing.horaSalida,
           estadoDomicilio: visitData.estadoDomicilio !== undefined ? visitData.estadoDomicilio : existing.estadoDomicilio,
-          fechaRecepcion:  visitData.fechaRecepcion !== undefined ? visitData.fechaRecepcion : existing.fechaRecepcion,
-          movimiento:      visitData.movimiento || (visitData.horaSalida ? 'salida' : (existing.horaSalida && !visitData.horaSalida ? 'ingreso' : existing.movimiento)),
+          fechaRecepcion: visitData.fechaRecepcion !== undefined ? visitData.fechaRecepcion : existing.fechaRecepcion,
+          movimiento: visitData.movimiento || (visitData.horaSalida ? 'salida' : (existing.horaSalida && !visitData.horaSalida ? 'ingreso' : existing.movimiento)),
         };
         await db.visitas.update(existing.id, updatedRow);
         return { ...updatedRow, id: existing.id };
@@ -104,10 +104,10 @@ const dbVisitas = {
     const row = {
       ...visitData,
       localId,
-      tenant_id:   tenantId,
-      syncStatus:  visitData.syncStatus || 'pendiente',
+      tenant_id: tenantId,
+      syncStatus: visitData.syncStatus || 'pendiente',
       horaIngreso: visitData.horaIngreso || new Date().toISOString(),
-      movimiento:  visitData.movimiento || (visitData.horaSalida ? 'salida' : 'ingreso'),
+      movimiento: visitData.movimiento || (visitData.horaSalida ? 'salida' : 'ingreso'),
     };
     const id = await db.visitas.add(row);
     return { ...row, id };
@@ -117,15 +117,15 @@ const dbVisitas = {
   async buscarIngresoAbierto(residentId, cedula, apto) {
     const currentTenantId = dbVisitas.getCurrentTenantId();
     const all = await db.visitas.toArray();
-    const list = all.filter(v => 
+    const list = all.filter(v =>
       v.tipo === 'residente' &&
       (!currentTenantId || !v.tenant_id || String(v.tenant_id) === String(currentTenantId))
     );
-    return list.reverse().find(v => 
-      !v.horaSalida && 
-      ( (residentId && v.resident_id === residentId) || 
-        (cedula && v.cedula === cedula) || 
-        (apto && v.apartamento === apto.toUpperCase()) )
+    return list.reverse().find(v =>
+      !v.horaSalida &&
+      ((residentId && v.resident_id === residentId) ||
+        (cedula && v.cedula === cedula) ||
+        (apto && v.apartamento === apto.toUpperCase()))
     ) || null;
   },
 
@@ -135,7 +135,7 @@ const dbVisitas = {
     const cedTrim = String(cedula).trim().toLowerCase();
     const currentTenantId = dbVisitas.getCurrentTenantId();
     const all = await db.visitas.toArray();
-    const list = all.filter(v => 
+    const list = all.filter(v =>
       v.tipo === 'visita' &&
       !v.horaSalida &&
       (!currentTenantId || !v.tenant_id || String(v.tenant_id) === String(currentTenantId))
@@ -147,8 +147,21 @@ const dbVisitas = {
   async getVisitantesActivos() {
     const currentTenantId = dbVisitas.getCurrentTenantId();
     const all = await db.visitas.toArray();
-    const list = all.filter(v => 
+    const list = all.filter(v =>
       (v.tipo === 'visita' || v.tipo === 'domicilio') &&
+      !v.horaSalida &&
+      (!currentTenantId || !v.tenant_id || String(v.tenant_id) === String(currentTenantId))
+    );
+    list.sort((a, b) => new Date(b.horaIngreso || 0) - new Date(a.horaIngreso || 0));
+    return list;
+  },
+
+  // Obtener residentes activos dentro del conjunto (horaSalida == null)
+  async getResidentesActivos() {
+    const currentTenantId = dbVisitas.getCurrentTenantId();
+    const all = await db.visitas.toArray();
+    const list = all.filter(v =>
+      v.tipo === 'residente' &&
       !v.horaSalida &&
       (!currentTenantId || !v.tenant_id || String(v.tenant_id) === String(currentTenantId))
     );
@@ -160,7 +173,7 @@ const dbVisitas = {
   async getPendientes() {
     const currentTenantId = dbVisitas.getCurrentTenantId();
     const all = await db.visitas.toArray();
-    return all.filter(v => 
+    return all.filter(v =>
       v.syncStatus === 'pendiente' &&
       (!currentTenantId || !v.tenant_id || String(v.tenant_id) === String(currentTenantId))
     );
@@ -175,7 +188,7 @@ const dbVisitas = {
   async getRecientes(n = 3) {
     const currentTenantId = dbVisitas.getCurrentTenantId();
     const all = await db.visitas.toArray();
-    const filtered = all.filter(v => 
+    const filtered = all.filter(v =>
       !currentTenantId || !v.tenant_id || String(v.tenant_id) === String(currentTenantId)
     );
     filtered.sort((a, b) => {
@@ -245,7 +258,22 @@ const dbVehiculos = {
 /* ─── RESIDENTES HELPERS ─────────────────────────────────────────────────────── */
 const dbResidentes = {
   async buscarPorApartamento(apt) {
+    if (!apt) return [];
     return db.residentes.where('apartamento').equals(apt.toUpperCase()).toArray();
+  },
+  async buscarPorCedula(cedula) {
+    if (!cedula) return null;
+    const cleanCed = String(cedula).trim();
+    // 1. Búsqueda directa indexada
+    const r = await db.residentes.where('cedula').equals(cleanCed).first();
+    if (r) return r;
+    // 2. Búsqueda insensible a mayúsculas o espacios
+    const all = await db.residentes.toArray();
+    return all.find(x => x.cedula && String(x.cedula).trim().toLowerCase() === cleanCed.toLowerCase()) || null;
+  },
+  async buscarPorId(id) {
+    if (!id) return null;
+    return db.residentes.get(id);
   },
   async cargarDesdeServidor(residentes) {
     await db.residentes.clear();

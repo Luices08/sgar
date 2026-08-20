@@ -43,15 +43,15 @@ async function loadTenants() {
   }
 
   grid.innerHTML = tenants.map(t => {
-    let estadoBadge = '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700">🟢 Activo</span>';
+    let estadoBadge = '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700">Activo</span>';
     if (t.estado === 'suspendido') {
-      estadoBadge = '<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700" title="' + (t.motivoSuspension ? SGAR.escHtml(t.motivoSuspension) : '') + '">🔴 Suspendido</span>';
+      estadoBadge = '<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700" title="' + (t.motivoSuspension ? SGAR.escHtml(t.motivoSuspension) : '') + '">Suspendido</span>';
     } else if (t.estado === 'inactivo' || !t.activo) {
-      estadoBadge = '<span class="badge" style="background:#f1f5f9;color:#475569;font-weight:700">⚪ Inactivo</span>';
+      estadoBadge = '<span class="badge" style="background:#f1f5f9;color:#475569;font-weight:700">Inactivo</span>';
     }
 
     const nitStr = t.nit ? ` · NIT: ${t.nit}` : '';
-    const adminStr = t.adminPrincipal ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">👤 Admin: <strong>${t.adminPrincipal.nombre}</strong> (${t.adminPrincipal.email})</div>` : '';
+    const adminStr = t.adminPrincipal ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Admin: <strong>${t.adminPrincipal.nombre}</strong> (${t.adminPrincipal.email})</div>` : '';
 
     return `
     <div class="tenant-card">
@@ -191,7 +191,7 @@ async function deleteTenant(id, nombre) {
   });
 
   if (res && res.success) {
-    alert('✓ Conjunto archivado exitosamente. La información histórica ha sido preservada.');
+    alert('Conjunto archivado exitosamente. La información histórica ha sido preservada.');
     loadTenants();
   } else {
     alert(res?.message || 'Error al archivar conjunto');

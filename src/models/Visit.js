@@ -5,129 +5,151 @@ const { VISIT_TYPES, SYNC_STATUS, ID_METHODS } = require('../config/constants');
 
 // Sub-schema para historial de auditoría (ediciones y eliminaciones)
 const auditEntrySchema = new mongoose.Schema({
-  timestamp:       { type: Date,   default: Date.now },
-  celador_id:      { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  celador_nombre:  { type: String },
-  accion:          { type: String, enum: ['edicion', 'eliminacion'] },
-  camposAnteriores:{ type: mongoose.Schema.Types.Mixed },
-  camposNuevos:    { type: mongoose.Schema.Types.Mixed },
+  timestamp: { type: Date, default: Date.now },
+  celador_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  celador_nombre: { type: String },
+  accion: { type: String, enum: ['edicion', 'eliminacion'] },
+  camposAnteriores: { type: mongoose.Schema.Types.Mixed },
+  camposNuevos: { type: mongoose.Schema.Types.Mixed },
 }, { _id: false });
 
 const visitSchema = new mongoose.Schema({
   tenant_id: {
-    type:     mongoose.Schema.Types.ObjectId,
-    ref:      'Tenant',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
     required: true,
-    index:    true,
+    index: true,
   },
 
   // ─── IDENTIFICACIÓN DEL VISITANTE ─────────────────────────────────────────
   tipo: {
-    type:     String,
+    type: String,
     required: true,
-    enum:     [...Object.values(VISIT_TYPES)],
+    enum: [...Object.values(VISIT_TYPES)],
   },
   nombre: {
-    type:  String,
-    trim:  true,
+    type: String,
+    trim: true,
   },
   cedula: {
-    type:  String,
-    trim:  true,
+    type: String,
+    trim: true,
   },
   empresa: {
-    type:  String,     // Para domicilios
-    trim:  true,
+    type: String,     // Para domicilios
+    trim: true,
   },
   placa: {
-    type:      String,   // Para vehículos
-    trim:      true,
+    type: String,   // Para vehículos de ingreso
+    trim: true,
     uppercase: true,
+    default: null,
+  },
+  placaSalida: {
+    type: String,   // Para vehículos de salida
+    trim: true,
+    uppercase: true,
+    default: null,
+  },
+  tipoVehiculo: {
+    type: String,
+    enum: ['Carro', 'Motocicleta', 'Otro', null],
+    default: null,
+  },
+  marcaVehiculo: {
+    type: String,
+    trim: true,
+    default: null,
+  },
+  modeloVehiculo: {
+    type: String,
+    trim: true,
+    default: null,
   },
   fotoUrl: {
-    type:  String,
+    type: String,
     default: null,
   },
 
   // ─── DESTINO ──────────────────────────────────────────────────────────────
   apartamento: {
-    type:     String,
+    type: String,
     required: true,
-    trim:     true,
+    trim: true,
     uppercase: true,
   },
   resident_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'Resident',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resident',
     default: null,
   },
 
   // ─── TIEMPOS Y ESTADOS DE DOMICILIOS ──────────────────────────────────────
-  horaIngreso:        { type: Date, default: Date.now },
-  horaSalida:         { type: Date, default: null },
-  estadoDomicilio:    { type: String, enum: ['pendiente', 'recibido', 'ingresado'], default: null },
-  fechaLlegada:       { type: Date, default: null },
-  fechaNotificacion:  { type: Date, default: null },
-  fechaRecepcion:     { type: Date, default: null },
-  recibidoPor:        { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', default: null },
-  recibidoPorNombre:  { type: String, default: null },
+  horaIngreso: { type: Date, default: Date.now },
+  horaSalida: { type: Date, default: null },
+  estadoDomicilio: { type: String, enum: ['pendiente', 'recibido', 'ingresado'], default: null },
+  fechaLlegada: { type: Date, default: null },
+  fechaNotificacion: { type: Date, default: null },
+  fechaRecepcion: { type: Date, default: null },
+  recibidoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', default: null },
+  recibidoPorNombre: { type: String, default: null },
 
   // ─── TRAZABILIDAD ─────────────────────────────────────────────────────────
   celador_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'User',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
   },
   celador_nombre: {
     type: String,
   },
   metodoIdentificacion: {
-    type:    String,
-    enum:    Object.values(ID_METHODS),
+    type: String,
+    enum: Object.values(ID_METHODS),
     default: ID_METHODS.MANUAL,
   },
   // Trazabilidad de Salida
   metodoSalida: {
-    type:    String,
-    enum:    Object.values(ID_METHODS),
+    type: String,
+    enum: Object.values(ID_METHODS),
     default: null,
   },
   celador_salida_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'User',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     default: null,
   },
   celador_salida_nombre: {
-    type:    String,
+    type: String,
     default: null,
   },
   // Para registros vinculados a invitación
   invitation_id: {
-    type:    mongoose.Schema.Types.ObjectId,
-    ref:     'Invitation',
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Invitation',
     default: null,
   },
 
   // ─── SINCRONIZACIÓN OFFLINE ───────────────────────────────────────────────
   syncStatus: {
-    type:    String,
-    enum:    Object.values(SYNC_STATUS),
+    type: String,
+    enum: Object.values(SYNC_STATUS),
     default: SYNC_STATUS.SINCRONIZADO,
   },
   // ID local de Dexie.js para deduplicación en sincronización
   localId: {
-    type:  String,
+    type: String,
     default: null,
   },
 
   // ─── AUDITORÍA ────────────────────────────────────────────────────────────
   observaciones: {
-    type:  String,
-    trim:  true,
+    type: String,
+    trim: true,
     default: null,    // Usado por técnicos de mantenimiento
   },
-  eliminado:  { type: Boolean, default: false },
-  auditLog:   { type: [auditEntrySchema], default: [] },
+  eliminado: { type: Boolean, default: false },
+  auditLog: { type: [auditEntrySchema], default: [] },
 }, {
   timestamps: true,
 });

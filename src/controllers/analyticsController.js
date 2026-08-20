@@ -10,35 +10,50 @@ const Tenant        = require('../models/Tenant');
 const Resident      = require('../models/Resident');
 const Vehicle       = require('../models/Vehicle');
 
+// Helper para parsear año, mes y día de forma robusta sin desfasar zona horaria
+function parseDateParts(fechaStr) {
+  if (!fechaStr) {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
+  }
+  const parts = String(fechaStr).split('T')[0].split('-');
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+      return { year: y, month: m, day: d };
+    }
+  }
+  const fallback = new Date(fechaStr);
+  return { year: fallback.getFullYear(), month: fallback.getMonth(), day: fallback.getDate() };
+}
+
 // Helper para calcular rango de fechas [inicio, fin] según periodo
 function getRangoFechas(periodo = 'dia', fechaRefStr) {
-  let base = fechaRefStr ? new Date(fechaRefStr) : new Date();
-  if (isNaN(base.getTime())) {
-    base = new Date();
-  }
-
+  const { year, month, day } = parseDateParts(fechaRefStr);
   let inicio, fin;
 
   if (periodo === 'dia') {
-    inicio = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
-    fin    = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
+    inicio = new Date(year, month, day, 0, 0, 0, 0);
+    fin    = new Date(year, month, day, 23, 59, 59, 999);
   } else if (periodo === 'semana') {
-    // Últimos 7 días terminando al final del día base
-    fin    = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
-    inicio = new Date(fin.getTime() - 6 * 24 * 60 * 60 * 1000);
-    inicio.setHours(0, 0, 0, 0);
+    fin    = new Date(year, month, day, 23, 59, 59, 999);
+    inicio = new Date(year, month, day, 0, 0, 0, 0);
+    inicio.setDate(inicio.getDate() - 6);
   } else if (periodo === 'mes') {
-    // Últimos 30 días terminando al final del día base
-    fin    = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
-    inicio = new Date(fin.getTime() - 29 * 24 * 60 * 60 * 1000);
-    inicio.setHours(0, 0, 0, 0);
+    fin    = new Date(year, month, day, 23, 59, 59, 999);
+    inicio = new Date(year, month, day, 0, 0, 0, 0);
+    inicio.setDate(inicio.getDate() - 29);
   } else {
-    inicio = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
-    fin    = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
+    inicio = new Date(year, month, day, 0, 0, 0, 0);
+    fin    = new Date(year, month, day, 23, 59, 59, 999);
   }
 
   return { inicio, fin };
 }
+
+const TIMEZONE_BOGOTA = 'America/Bogota';
 
 // ─── ANALÍTICAS DE CONJUNTO (AdminConjunto & Drilldown de SuperAdmin) ─────────
 const getConjuntoAnalytics = asyncHandler(async (req, res) => {
@@ -82,28 +97,28 @@ const getConjuntoAnalytics = asyncHandler(async (req, res) => {
       horaSalida: null,
       eliminado: false,
     }),
-    // Distribución horaria de entradas (0..23)
+    // Distribución horaria de entradas (0..23) en zona horaria local
     Visit.aggregate([
       { $match: { tenant_id: tId, horaIngreso: { $gte: inicio, $lte: fin }, eliminado: false } },
-      { $group: { _id: { $hour: '$horaIngreso' }, count: { $sum: 1 } } },
+      { $group: { _id: { $hour: { date: '$horaIngreso', timezone: TIMEZONE_BOGOTA } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
-    // Distribución horaria de salidas (0..23)
+    // Distribución horaria de salidas (0..23) en zona horaria local
     Visit.aggregate([
       { $match: { tenant_id: tId, horaSalida: { $gte: inicio, $lte: fin }, eliminado: false } },
-      { $group: { _id: { $hour: '$horaSalida' }, count: { $sum: 1 } } },
+      { $group: { _id: { $hour: { date: '$horaSalida', timezone: TIMEZONE_BOGOTA } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
     // Distribución por días de entradas (para semana o mes)
     Visit.aggregate([
       { $match: { tenant_id: tId, horaIngreso: { $gte: inicio, $lte: fin }, eliminado: false } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$horaIngreso' } }, count: { $sum: 1 } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$horaIngreso', timezone: TIMEZONE_BOGOTA } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
     // Distribución por días de salidas (para semana o mes)
     Visit.aggregate([
       { $match: { tenant_id: tId, horaSalida: { $gte: inicio, $lte: fin }, eliminado: false } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$horaSalida' } }, count: { $sum: 1 } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$horaSalida', timezone: TIMEZONE_BOGOTA } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
     // Distribución por tipo de acceso
@@ -137,7 +152,7 @@ const getConjuntoAnalytics = asyncHandler(async (req, res) => {
 
     for (let i = 0; i < numDias; i++) {
       const d = new Date(inicio.getTime() + i * 24 * 60 * 60 * 1000);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
       const diaNom = d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric' });
       diasAccesos.push({
         fecha: dateStr,
@@ -172,17 +187,17 @@ const getConjuntoAnalytics = asyncHandler(async (req, res) => {
     }),
     VehicleAccessLog.aggregate([
       { $match: { tenant_id: tId, horaIngreso: { $gte: inicio, $lte: fin } } },
-      { $group: { _id: { $hour: '$horaIngreso' }, count: { $sum: 1 } } },
+      { $group: { _id: { $hour: { date: '$horaIngreso', timezone: TIMEZONE_BOGOTA } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
     VehicleAccessLog.aggregate([
       { $match: { tenant_id: tId, horaSalida: { $gte: inicio, $lte: fin } } },
-      { $group: { _id: { $hour: '$horaSalida' }, count: { $sum: 1 } } },
+      { $group: { _id: { $hour: { date: '$horaSalida', timezone: TIMEZONE_BOGOTA } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
     VehicleAccessLog.aggregate([
       { $match: { tenant_id: tId, horaIngreso: { $gte: inicio, $lte: fin } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$horaIngreso' } }, count: { $sum: 1 } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$horaIngreso', timezone: TIMEZONE_BOGOTA } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
     // Agrupación por placa con mayor movimiento (Ingresos + Salidas)

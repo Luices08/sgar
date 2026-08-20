@@ -1,7 +1,13 @@
 'use strict';
+function getLocalDateStr(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 let currentPeriod = 'dia';
-let currentDate   = new Date().toISOString().split('T')[0];
+let currentDate   = getLocalDateStr();
 let selectedTenantId   = null;
 let selectedTenantName = null;
 
@@ -146,7 +152,7 @@ async function loadGlobalAnalytics() {
       <td><span class="badge ${c.activo ? 'badge-active' : 'badge-inactive'}">${c.estado || (c.activo ? 'activo' : 'inactivo')}</span></td>
       <td style="text-align:right;">
         <button class="btn-primary btn-sm" onclick="drilldownConjunto('${c._id}', '${SGAR.escHtml(c.nombre)}')">
-          🔍 Ver analíticas
+          Ver analíticas
         </button>
       </td>
     </tr>
@@ -163,7 +169,7 @@ window.drilldownConjunto = function(tenantId, tenantName) {
   const banner = document.getElementById('drilldown-banner');
   const bannerName = document.getElementById('drilldown-name');
   if (banner && bannerName) {
-    bannerName.textContent = `📍 ${tenantName}`;
+    bannerName.textContent = tenantName;
     banner.style.display = 'flex';
   }
 
@@ -264,14 +270,13 @@ async function loadConjuntoAnalytics() {
   }
 
   tbodyTopVeh.innerHTML = topVeh.map((v, idx) => {
-    const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : '';
     const alertaBadge = v.alertasNoAutorizado > 0
-      ? `<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700;">⚠️ ${v.alertasNoAutorizado} no autorizada(s)</span>`
-      : `<span class="badge" style="background:#dcfce7;color:#15803d;">✓ Normal</span>`;
+      ? `<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700;">${v.alertasNoAutorizado} no autorizada(s)</span>`
+      : `<span class="badge" style="background:#dcfce7;color:#15803d;">Normal</span>`;
 
     return `
       <tr>
-        <td><strong>${medal}${SGAR.escHtml(v.placa)}</strong></td>
+        <td><strong style="color:var(--acento); margin-right:4px;">#${idx + 1}</strong> <strong>${SGAR.escHtml(v.placa)}</strong></td>
         <td>${v.tipoVehiculo || 'Carro'}</td>
         <td><strong>Apto ${v.apartamento || '—'}</strong></td>
         <td>${SGAR.escHtml(v.responsablePrincipal || '—')}</td>

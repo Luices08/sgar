@@ -1,21 +1,21 @@
 'use strict';
 
-const bcrypt      = require('bcryptjs');
-const asyncHandler= require('../utils/asyncHandler');
+const bcrypt = require('bcryptjs');
+const asyncHandler = require('../utils/asyncHandler');
 const { ok, created, error, paginated } = require('../utils/response');
-const { ROLES }   = require('../config/constants');
+const { ROLES } = require('../config/constants');
 
-const Resident         = require('../models/Resident');
-const User             = require('../models/User');
-const Visit            = require('../models/Visit');
+const Resident = require('../models/Resident');
+const User = require('../models/User');
+const Visit = require('../models/Visit');
 const VehicleAccessLog = require('../models/VehicleAccessLog');
-const { VISIT_TYPES }  = require('../config/constants');
+const { VISIT_TYPES } = require('../config/constants');
 
 // ─── LISTAR RESIDENTES ────────────────────────────────────────────────────────
 const list = asyncHandler(async (req, res) => {
-  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, parseInt(req.query.limit) || 50);
-  const skip  = (page - 1) * limit;
+  const skip = (page - 1) * limit;
 
   const filter = { tenant_id: req.tenantId };
   if (req.query.activo !== undefined) filter.activo = req.query.activo !== 'false';
@@ -29,10 +29,10 @@ const list = asyncHandler(async (req, res) => {
     Resident.find(filter).sort({ apartamento: 1, nombre: 1 }).skip(skip).limit(limit).lean(),
     Resident.countDocuments(filter),
     Visit.find({
-      tenant_id:  req.tenantId,
-      tipo:       VISIT_TYPES.RESIDENTE,
+      tenant_id: req.tenantId,
+      tipo: VISIT_TYPES.RESIDENTE,
       horaSalida: null,
-      eliminado:  false,
+      eliminado: false,
     }).select('resident_id horaIngreso metodoIdentificacion celador_nombre placa').lean(),
   ]);
 
@@ -47,8 +47,8 @@ const list = asyncHandler(async (req, res) => {
     const activeVisit = openMap.get(r._id.toString()) || null;
     return {
       ...r,
-      dentro:        !!activeVisit,
-      estadoAcceso:  activeVisit ? 'dentro' : 'fuera',
+      dentro: !!activeVisit,
+      estadoAcceso: activeVisit ? 'dentro' : 'fuera',
       ingresoActivo: activeVisit,
     };
   });
@@ -62,19 +62,19 @@ const getOne = asyncHandler(async (req, res) => {
   if (!resident) return error(res, 'Residente no encontrado', 404);
 
   const openVisit = await Visit.findOne({
-    tenant_id:   req.tenantId,
+    tenant_id: req.tenantId,
     resident_id: resident._id,
-    tipo:        VISIT_TYPES.RESIDENTE,
-    horaSalida:  null,
-    eliminado:   false,
+    tipo: VISIT_TYPES.RESIDENTE,
+    horaSalida: null,
+    eliminado: false,
   }).sort({ horaIngreso: -1 }).lean();
 
   return ok(res, {
     resident: {
       ...resident,
-      dentro:       !!openVisit,
+      dentro: !!openVisit,
       estadoAcceso: openVisit ? 'dentro' : 'fuera',
-      openVisit:    openVisit || null,
+      openVisit: openVisit || null,
     },
   });
 });
@@ -102,12 +102,12 @@ const create = asyncHandler(async (req, res) => {
   const fotoUrl = req.file ? `/uploads/residentes/${req.file.filename}` : null;
 
   const resident = await Resident.create({
-    tenant_id:   req.tenantId,
-    nombre:      nombre.trim(),
-    cedula:      cedTrim || undefined,
+    tenant_id: req.tenantId,
+    nombre: nombre.trim(),
+    cedula: cedTrim || undefined,
     apartamento: apartamento.toUpperCase().trim(),
-    telefono:    telefono ? telefono.trim() : undefined,
-    email:       email ? email.toLowerCase().trim() : undefined,
+    telefono: telefono ? telefono.trim() : undefined,
+    email: email ? email.toLowerCase().trim() : undefined,
     fotoUrl,
   });
 
@@ -116,14 +116,14 @@ const create = asyncHandler(async (req, res) => {
     try {
       const hashed = await bcrypt.hash(req.body.password, 12);
       const user = await User.create({
-        nombre:      resident.nombre,
-        email:       email.toLowerCase().trim(),
-        password:    hashed,
-        rol:         ROLES.RESIDENTE,
-        tenant_id:   req.tenantId,
+        nombre: resident.nombre,
+        email: email.toLowerCase().trim(),
+        password: hashed,
+        rol: ROLES.RESIDENTE,
+        tenant_id: req.tenantId,
         resident_id: resident._id,
-        cedula:      cedTrim || undefined,
-        activo:      true,
+        cedula: cedTrim || undefined,
+        activo: true,
       });
       resident.user_id = user._id;
       await resident.save();
@@ -156,12 +156,12 @@ const updateFaceId = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const { nombre, cedula, apartamento, telefono, email, activo, password } = req.body;
   const updateData = {};
-  if (nombre      !== undefined) updateData.nombre      = nombre.trim();
+  if (nombre !== undefined) updateData.nombre = nombre.trim();
   if (apartamento !== undefined) updateData.apartamento = apartamento.toUpperCase().trim();
-  if (telefono    !== undefined) updateData.telefono    = telefono.trim();
-  if (email       !== undefined) updateData.email       = email ? email.toLowerCase().trim() : '';
-  if (activo      !== undefined) updateData.activo      = activo;
-  if (req.file)                  updateData.fotoUrl     = `/uploads/residentes/${req.file.filename}`;
+  if (telefono !== undefined) updateData.telefono = telefono.trim();
+  if (email !== undefined) updateData.email = email ? email.toLowerCase().trim() : '';
+  if (activo !== undefined) updateData.activo = activo;
+  if (req.file) updateData.fotoUrl = `/uploads/residentes/${req.file.filename}`;
 
   if (cedula !== undefined) {
     const cedTrim = cedula && String(cedula).trim() ? String(cedula).trim() : null;
@@ -198,14 +198,14 @@ const update = asyncHandler(async (req, res) => {
     // Si envían password, no tenía usuario y sí tiene email, se lo creamos
     const hashed = await bcrypt.hash(password, 12);
     const user = await User.create({
-      nombre:      resident.nombre,
-      email:       resident.email.toLowerCase().trim(),
-      password:    hashed,
-      rol:         ROLES.RESIDENTE,
-      tenant_id:   req.tenantId,
+      nombre: resident.nombre,
+      email: resident.email.toLowerCase().trim(),
+      password: hashed,
+      rol: ROLES.RESIDENTE,
+      tenant_id: req.tenantId,
       resident_id: resident._id,
-      cedula:      resident.cedula || undefined,
-      activo:      true,
+      cedula: resident.cedula || undefined,
+      activo: true,
     });
     resident.user_id = user._id;
     await resident.save();
@@ -227,7 +227,7 @@ const createAccount = asyncHandler(async (req, res) => {
   const resident = await Resident.findOne({ _id: req.params.id, tenant_id: req.tenantId });
   if (!resident) return error(res, 'Residente no encontrado', 404);
   if (resident.user_id) return error(res, 'Este residente ya tiene cuenta de acceso', 409);
-  if (!resident.email)  return error(res, 'El residente no tiene email registrado', 400);
+  if (!resident.email) return error(res, 'El residente no tiene email registrado', 400);
 
   const providedPwd = req.body.password;
   if (!providedPwd || providedPwd.length < 6) {
@@ -237,22 +237,22 @@ const createAccount = asyncHandler(async (req, res) => {
   const hashed = await bcrypt.hash(providedPwd, 12);
 
   const user = await User.create({
-    nombre:      resident.nombre,
-    email:       resident.email,
-    password:    hashed,
-    rol:         ROLES.RESIDENTE,
-    tenant_id:   resident.tenant_id,
+    nombre: resident.nombre,
+    email: resident.email,
+    password: hashed,
+    rol: ROLES.RESIDENTE,
+    tenant_id: resident.tenant_id,
     resident_id: resident._id,
-    cedula:      resident.cedula || undefined,
-    activo:      true,
+    cedula: resident.cedula || undefined,
+    activo: true,
   });
 
   resident.user_id = user._id;
   await resident.save();
 
   return created(res, {
-    user_id:   user._id,
-    email:     user.email,
+    user_id: user._id,
+    email: user.email,
   }, 'Cuenta de acceso creada exitosamente.');
 });
 
@@ -263,7 +263,7 @@ const bulkImport = asyncHandler(async (req, res) => {
   }
 
   const required = ['nombre', 'apartamento'];
-  const results  = { created: 0, errors: [] };
+  const results = { created: 0, errors: [] };
 
   for (const row of req.body.rows) {
     const missing = required.filter((f) => !row[f]);
@@ -284,12 +284,12 @@ const bulkImport = asyncHandler(async (req, res) => {
     }
     try {
       await Resident.create({
-        tenant_id:   req.tenantId,
-        nombre:      row.nombre,
-        cedula:      cedTrim || undefined,
+        tenant_id: req.tenantId,
+        nombre: row.nombre,
+        cedula: cedTrim || undefined,
         apartamento: row.apartamento.toUpperCase(),
-        telefono:    row.telefono,
-        email:       row.email,
+        telefono: row.telefono,
+        email: row.email,
       });
       results.created++;
     } catch (e) {
@@ -305,11 +305,11 @@ const bulkImport = asyncHandler(async (req, res) => {
 // Devuelve el registro de visita activo (tipo=residente) sin hora de salida.
 const getOpenVisit = asyncHandler(async (req, res) => {
   const visit = await Visit.findOne({
-    tenant_id:   req.tenantId,
+    tenant_id: req.tenantId,
     resident_id: req.params.id,
-    tipo:        VISIT_TYPES.RESIDENTE,
-    horaSalida:  null,
-    eliminado:   false,
+    tipo: VISIT_TYPES.RESIDENTE,
+    horaSalida: null,
+    eliminado: false,
   })
     .sort({ horaIngreso: -1 })
     .lean();
@@ -319,19 +319,111 @@ const getOpenVisit = asyncHandler(async (req, res) => {
   }
 
   const vehicleLog = await VehicleAccessLog.findOne({
-    tenant_id:  req.tenantId,
-    visit_id:   visit._id,
+    tenant_id: req.tenantId,
+    visit_id: visit._id,
     horaSalida: null,
   }).lean();
 
   return ok(res, { visit, vehicleLog, dentro: true, estadoAcceso: 'dentro' }, 'Ingreso abierto encontrado');
 });
 
+// ─── VERIFICAR RESIDENTE POR CÉDULA ──────────────────────────────────────────
+// GET /api/residents/verificar-cedula/:cedula
+const verificarCedula = asyncHandler(async (req, res) => {
+  const { cedula } = req.params;
+  if (!cedula || !cedula.trim()) {
+    return error(res, 'Debe proporcionar una cédula', 400);
+  }
+
+  const cedTrim = cedula.trim();
+  const resident = await Resident.findOne({
+    tenant_id: req.tenantId,
+    cedula: { $regex: new RegExp(`^${cedTrim.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i') },
+  }).lean();
+
+  if (!resident) {
+    return ok(res, {
+      exists: false,
+      message: `No existe ningún residente registrado con la cédula ${cedTrim} en este conjunto residencial.`,
+    });
+  }
+
+  let vehiculosConEstado = [];
+  try {
+    const Vehicle = require('../models/Vehicle');
+    const VehicleAccessLog = require('../models/VehicleAccessLog');
+    const vehiculos = await Vehicle.find({
+      tenant_id: req.tenantId,
+      activo: true,
+      $or: [
+        { responsablePrincipal: resident._id },
+        { autorizados: resident._id },
+        { propietarios: resident._id },
+      ],
+    }).lean();
+
+    const vehicleIds = vehiculos.map(v => v._id);
+    const vehiclePlacas = vehiculos.map(v => (v.placa || '').toUpperCase().trim()).filter(Boolean);
+
+    const openVehLogs = await VehicleAccessLog.find({
+      tenant_id: req.tenantId,
+      horaSalida: null,
+      $or: [
+        { vehicle_id: { $in: vehicleIds } },
+        { placa: { $in: vehiclePlacas } },
+      ],
+    }).sort({ horaIngreso: -1 }).lean();
+
+    const openMap = new Map();
+    openVehLogs.forEach(l => {
+      if (l.vehicle_id) openMap.set(String(l.vehicle_id), l);
+      if (l.placa) openMap.set(l.placa.toUpperCase().trim(), l);
+    });
+
+    vehiculosConEstado = vehiculos.map(v => {
+      const vPlaca = (v.placa || '').toUpperCase().trim();
+      const openLog = openMap.get(String(v._id)) || (vPlaca ? openMap.get(vPlaca) : null);
+      return {
+        ...v,
+        estadoAcceso: openLog ? 'dentro' : 'fuera',
+        dentro: !!openLog,
+        openLog: openLog || null,
+      };
+    });
+  } catch (_) { }
+
+  const openVisit = await Visit.findOne({
+    tenant_id: req.tenantId,
+    resident_id: resident._id,
+    tipo: VISIT_TYPES.RESIDENTE,
+    horaSalida: null,
+    eliminado: false,
+  }).sort({ horaIngreso: -1 }).lean();
+
+  return ok(res, {
+    exists: true,
+    activo: resident.activo !== false,
+    resident: {
+      _id: resident._id,
+      nombre: resident.nombre,
+      cedula: resident.cedula,
+      apartamento: resident.apartamento,
+      telefono: resident.telefono,
+      email: resident.email,
+      fotoUrl: resident.fotoUrl,
+    },
+    dentro: !!openVisit,
+    estadoAcceso: openVisit ? 'dentro' : 'fuera',
+    openVisit: openVisit || null,
+    vehiculos: vehiculosConEstado,
+  });
+});
+
 // ─── ELIMINAR RESIDENTE ───────────────────────────────────────────────────────
 const removeResident = asyncHandler(async (req, res) => {
   const resident = await Resident.findOne({ _id: req.params.id, tenant_id: req.tenantId });
   if (!resident) return error(res, 'Residente no encontrado', 404);
-  
+
   if (resident.user_id) {
     await User.findByIdAndDelete(resident.user_id);
   }
@@ -339,4 +431,4 @@ const removeResident = asyncHandler(async (req, res) => {
   return ok(res, {}, 'Residente eliminado exitosamente');
 });
 
-module.exports = { list, getOne, create, updateFaceId, update, createAccount, bulkImport, getOpenVisit, remove: removeResident };
+module.exports = { list, getOne, create, updateFaceId, update, createAccount, bulkImport, getOpenVisit, verificarCedula, remove: removeResident };

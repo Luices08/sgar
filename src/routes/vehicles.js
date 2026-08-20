@@ -9,6 +9,7 @@ const c         = require('../controllers/vehicleController');
 // ─── CONSULTAS DE VEHÍCULOS ───────────────────────────────────────────────────
 router.get('/mis-vehiculos',                      auth, tf, c.misVehiculos);
 router.get('/residente/:residentId',              auth, tf, c.listByResident);
+router.get('/no-registrados',                     auth, authorize.conjuntoStaff, tf, c.listNoRegistrados);
 router.get('/',                                   auth, authorize.conjuntoStaff, tf, c.list);
 router.get('/:id',                                auth, tf, c.getOne);
 

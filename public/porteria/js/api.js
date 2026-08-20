@@ -26,7 +26,7 @@ const porteriaAPI = (() => {
     if (data.success) {
       const { token, user, tenantConfig } = data.data;
       localStorage.setItem('sgar_token', token);
-      localStorage.setItem('sgar_user',  JSON.stringify(user));
+      localStorage.setItem('sgar_user', JSON.stringify(user));
 
       const currentTenantId = user.tenant_id ? String(user.tenant_id) : null;
       const lastTenantId = await dbConfig.get('currentTenantId');
@@ -44,8 +44,8 @@ const porteriaAPI = (() => {
       }
 
       // Guardar en Dexie para uso offline
-      await dbConfig.set('user',    user);
-      await dbConfig.set('token',   token);
+      await dbConfig.set('user', user);
+      await dbConfig.set('token', token);
       if (tenantConfig) {
         localStorage.setItem('sgar_tenant', JSON.stringify(tenantConfig));
         await dbConfig.set('tenant', tenantConfig);
@@ -68,8 +68,8 @@ const porteriaAPI = (() => {
         request('/api/vehicles?limit=200'),
         request('/api/residents?limit=500'),
       ]);
-      if (vehiculosRes?.success)   await dbVehiculos.cargarDesdeServidor(vehiculosRes.data);
-      if (residentesRes?.success)  await dbResidentes.cargarDesdeServidor(residentesRes.data);
+      if (vehiculosRes?.success) await dbVehiculos.cargarDesdeServidor(vehiculosRes.data);
+      if (residentesRes?.success) await dbResidentes.cargarDesdeServidor(residentesRes.data);
     } catch (_) {
       // Silencioso: los datos ya están en Dexie de sesiones anteriores
     }
@@ -87,14 +87,14 @@ const porteriaAPI = (() => {
       try {
         const res = await request('/api/visits', {
           method: 'POST',
-          body:   JSON.stringify(visitData),
+          body: JSON.stringify(visitData),
         });
         if (res?.success && res.data?.visit) {
           const v = res.data.visit;
           await dbVisitas.save({
             ...v,
-            tenant_id:  v.tenant_id || tenantId,
-            localId:    v.localId || v._id,
+            tenant_id: v.tenant_id || tenantId,
+            localId: v.localId || v._id,
             movimiento: res.data.accion || (v.horaSalida ? 'salida' : 'ingreso'),
             syncStatus: 'sincronizado',
           });
@@ -109,8 +109,19 @@ const porteriaAPI = (() => {
       }
     }
 
-    // PASO: Comprobar duplicado antes de guardar en Dexie offline
-    if (visitData.tipo === 'visita' && visitData.cedula) {
+    // PASO: Validaciones de reglas de negocio en modo offline (Dexie)
+    if (visitData.tipo === 'residente') {
+      const resident = await dbResidentes.buscarPorCedula(visitData.cedula);
+      if (!resident) {
+        return {
+          success: false,
+          message: `No es posible registrar el acceso: La cédula ${visitData.cedula} no pertenece a ningún residente registrado en este conjunto.`
+        };
+      }
+      visitData.resident_id = resident._id;
+      visitData.nombre = resident.nombre;
+      visitData.apartamento = resident.apartamento;
+    } else if (visitData.tipo === 'visita' && visitData.cedula) {
       const openVisitor = await dbVisitas.buscarVisitanteAbierto(visitData.cedula);
       if (openVisitor) {
         return {
@@ -133,7 +144,7 @@ const porteriaAPI = (() => {
     try {
       const res = await request('/api/visits/sync', {
         method: 'POST',
-        body:   JSON.stringify({ registros: pendientes }),
+        body: JSON.stringify({ registros: pendientes }),
       });
 
       if (res?.success) {
@@ -170,7 +181,7 @@ const porteriaAPI = (() => {
           body: JSON.stringify({ placa }),
         });
         if (res?.success) return res;
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Fallback local
@@ -180,12 +191,17 @@ const porteriaAPI = (() => {
   }
 
   /* ── REGISTRAR SALIDA DE VISITANTE ───────────────────────────────────────── */
-  async function registrarSalidaVisita(visitId) {
+  async function registrarSalidaVisita(visitId, exitData = {}) {
+    const payload = {
+      horaSalida: new Date().toISOString(),
+      metodoSalida: 'manual',
+      ...exitData,
+    };
     if (navigator.onLine) {
       try {
         const res = await request(`/api/visits/${visitId}/salida`, {
           method: 'PATCH',
-          body: JSON.stringify({ horaSalida: new Date().toISOString(), metodoSalida: 'manual' }),
+          body: JSON.stringify(payload),
         });
         if (res?.success && res.data?.visit) {
           await dbVisitas.save({
@@ -203,7 +219,9 @@ const porteriaAPI = (() => {
     // Fallback local en Dexie
     const local = await db.visitas.get(visitId) || await db.visitas.filter(v => v._id === visitId || v.localId === visitId).first();
     if (local) {
-      local.horaSalida = new Date().toISOString();
+      local.horaSalida = payload.horaSalida;
+      local.metodoSalida = payload.metodoSalida;
+      if (payload.placaSalida) local.placaSalida = payload.placaSalida;
       local.movimiento = 'salida';
       local.syncStatus = 'pendiente';
       await db.visitas.put(local);
@@ -218,9 +236,20 @@ const porteriaAPI = (() => {
       try {
         const res = await request('/api/visits/activas');
         if (res?.success) return res.data.visitantes || [];
-      } catch (_) {}
+      } catch (_) { }
     }
     return dbVisitas.getVisitantesActivos();
+  }
+
+  /* ── OBTENER RESIDENTES ACTIVOS ───────────────────────────────────────────── */
+  async function obtenerResidentesActivos() {
+    if (navigator.onLine) {
+      try {
+        const res = await request('/api/visits/residentes-activos');
+        if (res?.success) return res.data.residentes || [];
+      } catch (_) { }
+    }
+    return dbVisitas.getResidentesActivos();
   }
 
   /* ── OBTENER INVITACIONES PENDIENTES ─────────────────────────────────────── */
@@ -229,21 +258,79 @@ const porteriaAPI = (() => {
       try {
         const res = await request('/api/visits/pendientes');
         if (res?.success) return res.data.invitaciones || [];
-      } catch (_) {}
+      } catch (_) { }
     }
     return [];
   }
 
+  /* ── VERIFICAR RESIDENTE POR CÉDULA ─────────────────────────────────────── */
+  async function verificarResidentePorCedula(cedula) {
+    if (!cedula || !String(cedula).trim()) {
+      return { success: false, exists: false, message: 'La cédula es requerida' };
+    }
+    const cleanCed = String(cedula).trim();
+
+    if (navigator.onLine) {
+      try {
+        const res = await request(`/api/residents/verificar-cedula/${encodeURIComponent(cleanCed)}`);
+        if (res && res.success && res.data) {
+          return {
+            success: true,
+            exists: !!res.data.exists,
+            activo: res.data.activo !== false,
+            resident: res.data.resident || null,
+            dentro: !!res.data.dentro,
+            estadoAcceso: res.data.estadoAcceso || (res.data.dentro ? 'dentro' : 'fuera'),
+            openVisit: res.data.openVisit || null,
+            vehiculos: res.data.vehiculos || [],
+            message: res.data.message || res.message,
+          };
+        } else if (res && !res.success) {
+          return {
+            success: false,
+            exists: false,
+            message: res.message || 'Error al consultar residente',
+          };
+        }
+      } catch (err) {
+        console.warn('Error verificando residente online, fallback local:', err.message);
+      }
+    }
+
+    // Fallback offline con Dexie
+    const localResident = await dbResidentes.buscarPorCedula(cleanCed);
+    if (localResident) {
+      const openVisit = await dbVisitas.buscarIngresoAbierto(localResident._id, localResident.cedula, localResident.apartamento);
+      const vehiculos = await dbVehiculos.buscarPorResidente(localResident._id);
+      return {
+        success: true,
+        exists: true,
+        activo: localResident.activo !== false,
+        resident: localResident,
+        dentro: !!openVisit,
+        estadoAcceso: openVisit ? 'dentro' : 'fuera',
+        openVisit: openVisit || null,
+        vehiculos: vehiculos || [],
+      };
+    }
+
+    return {
+      success: true,
+      exists: false,
+      message: `No existe ningún residente registrado con la cédula ${cleanCed} en este conjunto residencial.`,
+    };
+  }
+
   /* ── LOGOUT ────────────────────────────────────────────────────────────────── */
   async function logout() {
-    try { await request('/api/auth/logout', { method: 'POST' }); } catch (_) {}
+    try { await request('/api/auth/logout', { method: 'POST' }); } catch (_) { }
     localStorage.clear();
     try {
       await db.visitas.clear();
       await db.vehiculos.clear();
       await db.residentes.clear();
       await db.config.clear();
-    } catch (_) {}
+    } catch (_) { }
     document.cookie = 'token=; Max-Age=0; path=/';
     window.location.href = '/admin/login';
   }
@@ -253,7 +340,9 @@ const porteriaAPI = (() => {
     registrarVisita,
     registrarSalidaVisita,
     obtenerVisitantesActivos,
+    obtenerResidentesActivos,
     obtenerInvitacionesPendientes,
+    verificarResidentePorCedula,
     syncPendientes,
     validarInvitacion,
     completarInvitacion,

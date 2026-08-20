@@ -1,6 +1,8 @@
 'use strict';
 
 let currentPage = 1;
+let currentUnregPage = 1;
+let currentTab = 'registrados';
 let searchTimer = null;
 let allTenantResidents = [];
 let selectedAuthIds = new Set();
@@ -13,15 +15,37 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-nuevo').addEventListener('click', openNew);
   document.getElementById('form-vehicle').addEventListener('submit', submitVehicle);
   
+  // Pestañas
+  document.getElementById('tab-vehiculos-registrados')?.addEventListener('click', () => switchTab('registrados'));
+  document.getElementById('tab-vehiculos-no-registrados')?.addEventListener('click', () => switchTab('no-registrados'));
+
   const searchEl = document.getElementById('search-input');
   if (searchEl) {
     searchEl.addEventListener('input', () => {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => { currentPage = 1; loadVehicles(); }, 400);
+      searchTimer = setTimeout(() => {
+        if (currentTab === 'registrados') {
+          currentPage = 1;
+          loadVehicles();
+        } else {
+          currentUnregPage = 1;
+          loadNoRegistrados();
+        }
+      }, 400);
     });
   }
 
   document.getElementById('filter-tipo')?.addEventListener('change', () => {
+    if (currentTab === 'registrados') {
+      currentPage = 1;
+      loadVehicles();
+    } else {
+      currentUnregPage = 1;
+      loadNoRegistrados();
+    }
+  });
+
+  document.getElementById('filter-estado-acceso')?.addEventListener('change', () => {
     currentPage = 1;
     loadVehicles();
   });
@@ -54,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('v-foto-upload').addEventListener('change', handlePhotoUpload);
 
   loadVehicles();
+  loadNoRegistrados();
   loadAllResidents();
 
   // Handle URL parameters for auto-assigning vehicle to a resident
@@ -207,68 +232,197 @@ async function handlePhotoUpload(e) {
   reader.readAsDataURL(file);
 }
 
+function switchTab(tab) {
+  currentTab = tab;
+  const tabReg = document.getElementById('tab-vehiculos-registrados');
+  const tabUnreg = document.getElementById('tab-vehiculos-no-registrados');
+  const wrapReg = document.getElementById('wrapper-registrados');
+  const wrapUnreg = document.getElementById('wrapper-no-registrados');
+  const btnNuevo = document.getElementById('btn-nuevo');
+  const filterEstado = document.getElementById('filter-estado-acceso');
+
+  if (tab === 'registrados') {
+    if (wrapReg) wrapReg.style.display = 'block';
+    if (wrapUnreg) wrapUnreg.style.display = 'none';
+    if (btnNuevo) btnNuevo.style.display = 'inline-flex';
+    if (filterEstado) filterEstado.style.display = 'inline-block';
+
+    if (tabReg) {
+      tabReg.style.background = 'var(--acento)';
+      tabReg.style.color = '#fff';
+    }
+    if (tabUnreg) {
+      tabUnreg.style.background = 'var(--bg)';
+      tabUnreg.style.color = 'var(--text-muted)';
+    }
+
+    currentPage = 1;
+    loadVehicles();
+  } else {
+    if (wrapReg) wrapReg.style.display = 'none';
+    if (wrapUnreg) wrapUnreg.style.display = 'block';
+    if (btnNuevo) btnNuevo.style.display = 'none';
+    if (filterEstado) filterEstado.style.display = 'none';
+
+    if (tabUnreg) {
+      tabUnreg.style.background = 'var(--acento)';
+      tabUnreg.style.color = '#fff';
+    }
+    if (tabReg) {
+      tabReg.style.background = 'var(--bg)';
+      tabReg.style.color = 'var(--text-muted)';
+    }
+
+    currentUnregPage = 1;
+    loadNoRegistrados();
+  }
+}
+
 async function loadVehicles() {
+  const tbody = document.getElementById('vehicles-tbody');
   const q = document.getElementById('search-input')?.value.trim() || '';
   const tipo = document.getElementById('filter-tipo')?.value || '';
+  const estadoAcceso = document.getElementById('filter-estado-acceso')?.value || '';
   let url = `/api/vehicles?page=${currentPage}&limit=20`;
   if (q) url += `&q=${encodeURIComponent(q)}`;
   if (tipo) url += `&tipo=${tipo}`;
+  if (estadoAcceso) url += `&estadoAcceso=${estadoAcceso}`;
 
-  const data = await SGAR.api(url);
-  if (!data || !data.success) return;
-
-  const { data: vehicles, pagination } = data;
-  document.getElementById('sub-count').textContent = `${pagination.total} vehículos`;
-
-  const tbody = document.getElementById('vehicles-tbody');
-  if (!vehicles.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="table-loading">Sin resultados para los filtros</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = vehicles.map(v => {
-    const fotoHtml = v.foto
-      ? `<img src="${v.foto}" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">`
-      : '<div style="width: 40px; height: 40px; border-radius: 4px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #999;">Sin foto</div>';
-
-    const respNombre = v.responsablePrincipal?.nombre 
-      ? `<strong>${v.responsablePrincipal.nombre}</strong> <small style="color:#64748b;">(Apto ${v.responsablePrincipal.apartamento || v.apartamento})</small>`
-      : (v.propietarios && v.propietarios[0]?.nombre 
-          ? `<strong>${v.propietarios[0].nombre}</strong>` 
-          : '<span style="color:#94a3b8">—</span>');
-    
-    let autorizadosHtml = '<span style="color:#94a3b8">—</span>';
-    if (v.autorizados && v.autorizados.length > 0) {
-      autorizadosHtml = v.autorizados.map(a => {
-        const nom = a.nombre || 'Residente';
-        const apt = a.apartamento ? ` (Apto ${a.apartamento})` : '';
-        return `<span class="badge" style="background:#e0f2fe;color:#0369a1;margin:2px 2px;display:inline-block;font-size:11px;">${nom}${apt}</span>`;
-      }).join('');
+  try {
+    const data = await SGAR.api(url);
+    if (!data || !data.success) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="table-loading" style="color:#ef4444;">${data?.message || 'Error cargando vehículos'}</td></tr>`;
+      return;
     }
 
-    const regBadge = v.esExterno
-      ? '<span class="badge" style="background:#fef3c7;color:#92400e">Externo</span>'
-      : '<span class="badge" style="background:#dcfce7;color:#15803d">SGAR</span>';
+    const { data: vehicles, pagination } = data;
+    if (currentTab === 'registrados') {
+      document.getElementById('sub-count').textContent = `${pagination.total} vehículos registrados`;
+    }
+    const badgeReg = document.getElementById('badge-count-registrados');
+    if (badgeReg) badgeReg.textContent = `${pagination.total}`;
 
-    return `
-    <tr>
-      <td>${fotoHtml}</td>
-      <td><strong>${v.placa || '—'}</strong></td>
-      <td>${v.tipo}</td>
-      <td>${v.marca || ''} ${v.modelo || ''}</td>
-      <td><strong>${v.apartamento}</strong></td>
-      <td>${respNombre}</td>
-      <td>${autorizadosHtml}</td>
-      <td>${regBadge}</td>
-      <td>${SGAR.activeBadge(v.activo)}</td>
-      <td>
-        <button class="btn-secondary btn-sm" onclick="openEdit(${JSON.stringify(v).replace(/"/g,'&quot;')})">Editar</button>
-        <button class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f; margin-left: 5px;" onclick="deleteVehicle('${v._id}')">Eliminar</button>
-      </td>
-    </tr>
-  `}).join('');
+    if (!vehicles.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="table-loading">Sin resultados para los filtros</td></tr>';
+      return;
+    }
 
-  SGAR.renderPagination('pagination', pagination, (p) => { currentPage = p; loadVehicles(); });
+    tbody.innerHTML = vehicles.map(v => {
+      const fotoHtml = v.foto
+        ? `<img src="${v.foto}" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">`
+        : '<div style="width: 40px; height: 40px; border-radius: 4px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #999;">Sin foto</div>';
+
+      const respNombre = v.responsablePrincipal?.nombre 
+        ? `<strong>${v.responsablePrincipal.nombre}</strong> <small style="color:#64748b;">(Apto ${v.responsablePrincipal.apartamento || v.apartamento})</small>`
+        : (v.propietarios && v.propietarios[0]?.nombre 
+            ? `<strong>${v.propietarios[0].nombre}</strong>` 
+            : '<span style="color:#94a3b8">—</span>');
+      
+      let autorizadosHtml = '<span style="color:#94a3b8">—</span>';
+      if (v.autorizados && v.autorizados.length > 0) {
+        autorizadosHtml = v.autorizados.map(a => {
+          const nom = a.nombre || 'Residente';
+          const apt = a.apartamento ? ` (Apto ${a.apartamento})` : '';
+          return `<span class="badge" style="background:#e0f2fe;color:#0369a1;margin:2px 2px;display:inline-block;font-size:11px;">${nom}${apt}</span>`;
+        }).join('');
+      }
+
+      const regBadge = v.esExterno
+        ? '<span class="badge" style="background:#fef3c7;color:#92400e">Externo</span>'
+        : '<span class="badge" style="background:#dcfce7;color:#15803d">SGAR</span>';
+
+      const ubicacionBadge = v.estadoAcceso === 'dentro'
+        ? `<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;display:inline-flex;align-items:center;gap:4px;">Dentro ${v.ingresoActivo?.horaIngreso ? `<small style="font-size:10.5px;font-weight:normal;opacity:0.85;">(${SGAR.fmtDate(v.ingresoActivo.horaIngreso)})</small>` : ''}</span>`
+        : '<span class="badge" style="background:#f1f5f9;color:#64748b;font-weight:600;">Fuera</span>';
+
+      return `
+      <tr>
+        <td>${fotoHtml}</td>
+        <td><strong>${v.placa || '—'}</strong></td>
+        <td>${v.tipo}</td>
+        <td>${v.marca || ''} ${v.modelo || ''}</td>
+        <td><strong>${v.apartamento}</strong></td>
+        <td>${respNombre}</td>
+        <td>${autorizadosHtml}</td>
+        <td>${regBadge}</td>
+        <td>${ubicacionBadge}</td>
+        <td>${SGAR.activeBadge(v.activo)}</td>
+        <td>
+          <button class="btn-secondary btn-sm" onclick="openEdit(${JSON.stringify(v).replace(/"/g,'&quot;')})">Editar</button>
+          <button class="btn-secondary btn-sm" style="color:#d32f2f; border-color:#d32f2f; margin-left: 5px;" onclick="deleteVehicle('${v._id}')">Eliminar</button>
+        </td>
+      </tr>
+    `}).join('');
+
+    SGAR.renderPagination('pagination', pagination, (p) => { currentPage = p; loadVehicles(); });
+  } catch (err) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="table-loading" style="color:#ef4444;">Error cargando vehículos: ${err.message}</td></tr>`;
+  }
+}
+
+async function loadNoRegistrados() {
+  const tbody = document.getElementById('unregistered-tbody');
+  const q = document.getElementById('search-input')?.value.trim() || '';
+  const tipo = document.getElementById('filter-tipo')?.value || '';
+  let url = `/api/vehicles/no-registrados?page=${currentUnregPage}&limit=20`;
+  if (q) url += `&q=${encodeURIComponent(q)}`;
+  if (tipo) url += `&tipo=${tipo}`;
+
+  try {
+    const data = await SGAR.api(url);
+    if (!data || !data.success) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="table-loading" style="color:#ef4444;">${data?.message || 'Error cargando vehículos'}</td></tr>`;
+      return;
+    }
+
+    const { data: unregVehicles, pagination } = data;
+    if (currentTab === 'no-registrados') {
+      document.getElementById('sub-count').textContent = `${pagination.total} vehículos temporales / no registrados`;
+    }
+
+    // Contar cuántos están dentro
+    const dentroCount = unregVehicles.filter(u => u.estadoAcceso === 'dentro').length;
+    const badgeNoReg = document.getElementById('badge-count-no-registrados');
+    if (badgeNoReg) {
+      badgeNoReg.textContent = `${dentroCount} adentro`;
+    }
+
+    if (!unregVehicles.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="table-loading">No hay vehículos no registrados con los filtros aplicados</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = unregVehicles.map(u => {
+      const estadoBadge = u.estadoAcceso === 'dentro'
+        ? '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;">Dentro</span>'
+        : '<span class="badge" style="background:#f1f5f9;color:#64748b;">Salida</span>';
+
+      const condTipoBadge = u.conductor_tipo === 'residente'
+        ? '<span class="badge" style="background:#ede9fe;color:#6d28d9;">Residente</span>'
+        : (u.conductor_tipo === 'domicilio'
+            ? '<span class="badge" style="background:#fef3c7;color:#92400e;">Domicilio</span>'
+            : '<span class="badge" style="background:#e0f2fe;color:#0369a1;">Visitante</span>');
+
+      return `
+        <tr>
+          <td><strong style="font-family:monospace;font-size:14px;color:var(--acento);">${u.placa || '—'}</strong></td>
+          <td>${u.tipoVehiculo || 'Carro'}</td>
+          <td>${u.marca || '—'} ${u.modelo || ''}</td>
+          <td><strong>${u.apartamento || '—'}</strong></td>
+          <td><strong>${u.conductor_nombre || '—'}</strong></td>
+          <td>${condTipoBadge}</td>
+          <td>${SGAR.fmtDate(u.horaIngreso)}</td>
+          <td>${u.horaSalida ? SGAR.fmtDate(u.horaSalida) : '<span style="color:#15803d; font-weight:700;">En el conjunto</span>'}</td>
+          <td>${estadoBadge}</td>
+          <td>${u.celador_nombre || '—'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    SGAR.renderPagination('unregistered-pagination', pagination, (p) => { currentUnregPage = p; loadNoRegistrados(); });
+  } catch (err) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="table-loading" style="color:#ef4444;">Error cargando vehículos no registrados: ${err.message}</td></tr>`;
+  }
 }
 
 async function openNew() {

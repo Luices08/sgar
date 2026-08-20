@@ -41,8 +41,8 @@ const vehicleSchema = new mongoose.Schema({
     validate: {
       validator: function(v) {
         if (!v) return true;
-        if (this.tipo === 'Carro') return /^[A-Z]{3} \d{3}$/.test(v);
-        if (this.tipo === 'Motocicleta') return /^[A-Z]{3} \d{2}[A-Z]$/.test(v);
+        if (this.tipo === 'Carro') return /^[A-Z]{3}\s?\d{3}$/.test(v);
+        if (this.tipo === 'Motocicleta') return /^[A-Z]{3}\s?\d{2}[A-Z]$/.test(v);
         return true;
       },
       message: props => `${props.value} no es un formato de placa válido`
