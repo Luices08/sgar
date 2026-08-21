@@ -1,4 +1,4 @@
-'use strict';
+'usesdf strict';
 
 require('dotenv').config();
 const express = require('express');
@@ -20,7 +20,20 @@ connectDB();
 app.use(helmet({
   contentSecurityPolicy: false   // se ajusta en producción
 }));
-app.use(cors({ origin: `http://localhost:${process.env.PORT || 3000}` }));
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://sgar.teamfusion.site'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Origen no permitido por CORS'));
+  }
+}));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
