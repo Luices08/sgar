@@ -2,10 +2,13 @@
 
 /**
  * Script para crear (o actualizar) un usuario adminControl.
- * Uso: node src/utils/createAdmin.js
+ * Uso: 
+ *   npm run seed:admin
+ *   node src/utils/createAdmin.js [email] [password] [nombre]
  *
- * Puedes cambiar el email/clave con variables de entorno al ejecutar:
- *   ADMIN_EMAIL=otro@correo.com ADMIN_PASSWORD=miclave node src/utils/createAdmin.js
+ * Ejemplos:
+ *   node src/utils/createAdmin.js
+ *   node src/utils/createAdmin.js admin@gmail.com miClave123 "Admin Super"
  */
 
 require('dotenv').config();
@@ -16,9 +19,10 @@ const connectDB = require('../config/database');
 const { ROLES } = require('../config/constants');
 const User = require('../models/User');
 
-const EMAIL    = (process.env.ADMIN_EMAIL || 'admin@gmail.com').toLowerCase().trim();
-const PASSWORD = process.env.ADMIN_PASSWORD || '123456';
-const NOMBRE   = process.env.ADMIN_NOMBRE || 'Administrador';
+const args = process.argv.slice(2);
+const EMAIL    = (args[0] || process.env.ADMIN_EMAIL || 'admin@sgar.local').toLowerCase().trim();
+const PASSWORD = args[1] || process.env.ADMIN_PASSWORD || 'admin123';
+const NOMBRE   = args[2] || process.env.ADMIN_NOMBRE || 'Administrador Principal';
 
 const run = async () => {
   await connectDB();
