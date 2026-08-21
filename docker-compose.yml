@@ -1,0 +1,38 @@
+services:
+
+  sgar-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sgar-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - sgar-mongodb
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - sgar-network
+      - infrastructure
+
+  sgar-mongodb:
+    image: mongo:8
+    container_name: sgar-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: sgar
+    volumes:
+      - sgar-mongodb-data:/data/db
+    networks:
+      - sgar-network
+
+networks:
+  sgar-network:
+    driver: bridge
+
+  infrastructure:
+    external: true
+
+volumes:
+  sgar-mongodb-data:
